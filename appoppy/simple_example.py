@@ -9,6 +9,7 @@ from appoppy.pyramid_wfs import PyramidWFS
 from appoppy.point_diffraction_interferometer import PointDiffractionInterferometer
 from appoppy.zernike_mask import ZernikeMaskWFS
 from poppy.poppy_core import PlaneType
+from appoppy.petaledM4 import PetaledM4
 
 
 class FocalPlaneWFSExample(object):
@@ -46,7 +47,7 @@ class FocalPlaneWFSExample(object):
         self._osys.planes[self._zernike_wavefront_plane] = in_wfe
 
     def set_m4_petals(self, piston):
-        in_wfe = SegmentedM4(piston, name='Piston WFE')
+        in_wfe = PetaledM4(piston, name='Piston WFE')
         self._osys.planes[self._zernike_wavefront_plane] = in_wfe
 
     def use_pyramid_wfs(self,
@@ -140,21 +141,6 @@ class FocalPlaneWFSExample(object):
             raise Exception('Unknown scale %s' % scale)
         plt.title(title)
         plt.grid()
-
-
-class SegmentedM4(WavefrontError):
-
-    @utils.quantity_input(piston=u.meter)
-    def __init__(self, piston, name="Piston WFE", **kwargs):
-        self._piston = piston
-        kwargs.update({'name': name})
-        super(SegmentedM4, self).__init__(**kwargs)
-
-    def get_opd(self, wave):
-        y, x = self.get_coordinates(wave)  # in meters
-        opd = np.zeros(wave.shape, dtype=np.float64)
-        opd[np.where(x > 0)] = self._piston.to(u.m).value
-        return opd
 
 
 class PyramidWFSExample(FocalPlaneWFSExample):
