@@ -24,4 +24,8 @@ setup(name='appoppy',
                         "scikit-image",
                         ],
       test_suite='test',
+      package_data={
+          'appoppy': ['data/*'],
+      },
+      include_package_data=True,
       )

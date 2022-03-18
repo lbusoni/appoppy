@@ -25,6 +25,7 @@ class PhaseShiftInterferometer():
     def __init__(self, optical_system_1, optical_system_2):
         self._os1 = optical_system_1
         self._os2 = optical_system_2
+        self._should_unwrap = False
         # assert self._os1.wavelength == self._os2.wavelength
         # TODO probably some check?
 
@@ -72,7 +73,10 @@ class PhaseShiftInterferometer():
 
     def interferogram(self):
         self._wrapped = np.arctan2(np.sin(self._ps), np.cos(self._ps))
-        self._unwrapped = skimage.restoration.unwrap_phase(self._wrapped)
+        if self._should_unwrap:
+            self._unwrapped = skimage.restoration.unwrap_phase(self._wrapped)
+        else:
+            self._unwrapped = self._wrapped.copy()
         self._ifgram = np.ma.masked_array(
             (self._unwrapped * self._wf_0.wavelength / (2 * np.pi)).to(u.nm).value,
             mask=self.global_mask()
