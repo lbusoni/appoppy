@@ -35,6 +35,24 @@ class KolmogorovWFETest(unittest.TestCase):
         print("0.98*l/r0 = %g  - FWHM %g " % (wants_fwhm, got_fwhm))
         self.assertAlmostEqual(wants_fwhm, got_fwhm, delta=wants_fwhm / 5)
 
+    def test_wavefront_std(self):
+        niter = 10
+        r0_at_500 = 2 * u.m
+        dz = 1e3 * u.m
+        wl = 2.2e-6 * u.m
+        telescope_radius = 19.5 * u.m
+        r0 = r0_at_500 * (wl / (0.5e-6 * u.m))**(6 / 5)
+
+        ss = poppy.OpticalSystem(pupil_diameter=2 * telescope_radius)
+        wv = ss.input_wavefront(wl)
+        wants_std = np.sqrt(1.03 * (2 * telescope_radius / r0)
+                            ** (5. / 3)) / 2 / np.pi * wl
+        for i in range(niter):
+            kwfe = poppy.KolmogorovWFE(r0=r0, dz=dz, kind='Kolmogorov')
+            opd = kwfe.get_opd(wv)
+            print("sqrt(1.03 D/r0 ^ (5/3): %g std: %g nm" % (
+                wants_std.to_value(u.nm), opd.std() * 1e9))
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

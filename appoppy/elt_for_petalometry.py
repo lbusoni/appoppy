@@ -6,6 +6,9 @@ import poppy
 from appoppy.petaled_m4 import PetaledM4
 from poppy.optics import ScalarOpticalPathDifference
 from poppy.poppy_core import PlaneType
+import skimage
+from appoppy.mask import mask_from_median
+from appoppy.elt_aperture import ELTAperture
 
 
 class EltForPetalometry(object):
@@ -17,7 +20,7 @@ class EltForPetalometry(object):
                  rotation_angle=0,
                  seed=0):
         self.wavelength = 2.2e-6 * u.m
-        self.telescope_radius = 19.5 * u.m
+        self.telescope_radius = 19.8 * u.m
         self.lambda_over_d = (
             self.wavelength / (2 * self.telescope_radius)).to(
                 u.arcsec, equivalencies=u.dimensionless_angles())
@@ -37,11 +40,12 @@ class EltForPetalometry(object):
                                               coefficients=zern_coeff,
                                               radius=self.telescope_radius))
         self._osys.add_pupil(PetaledM4())
-        self._osys.add_pupil(poppy.SecondaryObscuration(
-            secondary_radius=3.0, n_supports=6, support_width=50 * u.cm))
+#        self._osys.add_pupil(poppy.SecondaryObscuration(
+#            secondary_radius=3.0, n_supports=6, support_width=50 * u.cm))
+        self._osys.add_pupil(ELTAperture())
         self._osys.add_pupil(ScalarOpticalPathDifference(
             opd=0 * u.nm, planetype=PlaneType.pupil))
-        self._osys.add_rotation(self.pupil_rotation_angle)
+        self._osys.add_rotation(-1 * self.pupil_rotation_angle)
         self._osys.add_pupil(poppy.CircularAperture(radius=self.telescope_radius,
                                                     name='Entrance Pupil'))
         self._osys.add_detector(
@@ -57,6 +61,10 @@ class EltForPetalometry(object):
 
     def _reset_intermediate_wfs(self):
         self._intermediates_wfs = None
+
+    def set_atmospheric_wavefront(self, atmo_opd):
+        self._reset_intermediate_wfs()
+        pass
 
     def set_input_wavefront_zernike(self, zern_coeff):
         self._reset_intermediate_wfs()
@@ -117,6 +125,14 @@ class EltForPetalometry(object):
 
     def pupil_intensity(self):
         return self.pupil_wavefront().intensity
+
+    def pupil_opd_unwrapped(self):
+        mask = mask_from_median(self.pupil_intensity(), 3)
+        minv = np.logical_not(mask).astype(int)
+        unwrap = skimage.restoration.unwrap_phase(
+            self.pupil_phase() * minv)
+        return np.ma.array(unwrap / 2 / np.pi * self.wavelength.to_value(u.nm),
+                           mask=mask)
 
     def _display_on_plane(self, what, plane_number, scale='linear'):
         wave = self._wave(plane_number)

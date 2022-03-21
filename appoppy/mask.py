@@ -1,10 +1,23 @@
 import numpy as np
 
 
+def mask_from_median(image, cut):
+    imask = image < np.median(image) / cut
+    mask = np.zeros(image.shape)
+    mask[imask] = 1
+    return mask
+
+
 def sector_mask(shape, angle_range, centre=None, radius=None):
     """
-    Return a boolean mask for a circular sector. The start/stop angles in
-    `angle_range` should be given in clockwise order.
+    Return a boolean mask for a circular sector. 
+    The start/stop angles in
+    `angle_range` should be given in counterclockwise order, from East
+
+    angle_range=(0, 90) goes from East to North
+    angle_range=(-150, 150) includes S, E. N and not W
+
+    angle_range=(150, -150) raises ValueError
     """
 
     x, y = np.ogrid[:shape[0], :shape[1]]
@@ -17,7 +30,10 @@ def sector_mask(shape, angle_range, centre=None, radius=None):
 
     # ensure stop angle > start angle
     if tmax < tmin:
-        tmax += 2 * np.pi
+        #tmax += 2 * np.pi
+        raise ValueError(
+            "angle_range must be given in increasing order. Got %s" %
+            str(angle_range))
 
     # convert cartesian --> polar coordinates
     r2 = (x - cx) * (x - cx) + (y - cy) * (y - cy)

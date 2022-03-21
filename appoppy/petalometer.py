@@ -2,9 +2,8 @@ import astropy.units as u
 import numpy as np
 from appoppy.phase_shift_interferometer import PhaseShiftInterferometer
 from appoppy.elt_for_petalometry import EltForPetalometry
-from appoppy.sector_mask import sector_mask
+from appoppy.mask import sector_mask
 from appoppy.circular_math import wrap_around_zero, zero_mean, difference
-from appoppy import circular_math
 
 
 class Petalometer():
@@ -47,6 +46,11 @@ class Petalometer():
         self._model1.set_m4_petals(self._petals)
         self._model2.set_m4_petals(self._petals)
 
+    def set_atmospheric_wavefront(self, atmospheric_wavefront):
+        self._atmo_opd = atmospheric_wavefront
+        self._model1.set_atmospheric_wavefront(self._atmo_opd)
+        self._model2.set_atmospheric_wavefront(self._atmo_opd)
+
     @property
     def petals(self):
         return self._petals.to(u.nm)
@@ -73,11 +77,11 @@ class Petalometer():
     def _compute_jumps(self):
         r = self._model1.pupil_rotation_angle
         image = self._i4.interferogram()
-        angs = (-180, -180 + r, -120, -120 + r, -60, -
-                60 + r, 0, r, 60, 60 + r, 120, 120 + r, 180)
+        angs = (90, 90 - r, 30, 30 - r, -30, -30 - r, -
+                90, -90 - r, -150, -150 - r, -210, -210 - r, -270)
         res = np.zeros(len(angs) - 1)
         for i in range(len(angs) - 1):
-            ifm = self._mask_ifgram(image, (angs[i], angs[i + 1]))
+            ifm = self._mask_ifgram(image, (angs[i + 1], angs[i]))
             res[i] = np.ma.median(ifm)
 
         self._jumps = wrap_around_zero(

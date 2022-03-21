@@ -20,8 +20,8 @@ class PetaledM4(WavefrontError):
 
     def _mask_for_petal(self, x, y, petal_idx):
         return np.logical_and(
-            np.arctan2(y, x) < (petal_idx - 2) * np.pi / 3,
-            np.arctan2(y, x) > (petal_idx - 3) * np.pi / 3)
+            np.arctan2(-x, -y) < (petal_idx - 2) * np.pi / 3,
+            np.arctan2(-x, -y) > (petal_idx - 3) * np.pi / 3)
 
     def get_opd(self, wave):
         y, x = self.get_coordinates(wave)  # in meters

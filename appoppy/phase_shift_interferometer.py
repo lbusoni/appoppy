@@ -4,6 +4,7 @@ import skimage
 from astropy import units as u
 import matplotlib
 import matplotlib.pyplot as plt
+from appoppy.mask import mask_from_median
 
 
 class PhaseShiftInterferometer():
@@ -69,7 +70,7 @@ class PhaseShiftInterferometer():
         return self._visibility
 
     def visibility_mask(self):
-        return self._mask_from_median(self._visibility, 2)
+        return mask_from_median(self._visibility, 2)
 
     def interferogram(self):
         self._wrapped = np.arctan2(np.sin(self._ps), np.cos(self._ps))
@@ -78,24 +79,18 @@ class PhaseShiftInterferometer():
         else:
             self._unwrapped = self._wrapped.copy()
         self._ifgram = np.ma.masked_array(
-            (self._unwrapped * self._wf_0.wavelength / (2 * np.pi)).to(u.nm).value,
+            (self._unwrapped * self._wf_0.wavelength / (2 * np.pi)).to_value(u.nm),
             mask=self.global_mask()
         )
         return self._ifgram
 
     def global_mask(self):
-        mask1 = self._mask_from_median(self._os1.pupil_intensity(), 10)
-        mask2 = self._mask_from_median(self._os2.pupil_intensity(), 10)
+        mask1 = mask_from_median(self._os1.pupil_intensity(), 10)
+        mask2 = mask_from_median(self._os2.pupil_intensity(), 10)
         return np.ma.mask_or(mask1, mask2)
 
     def interferogram_mask(self, cut=1000):
-        return self._mask_from_median(self.interferogram(), cut)
-
-    def _mask_from_median(self, image, cut):
-        imask = image < np.median(image) / cut
-        mask = np.zeros(image.shape)
-        mask[imask] = 1
-        return mask
+        return mask_from_median(self.interferogram(), cut)
 
     def pupil_intensity(self):
         return self._ios_wf.intensity
