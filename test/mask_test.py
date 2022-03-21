@@ -7,17 +7,17 @@ class SectorMaskTest(unittest.TestCase):
 
     def test_around_pi(self):
 
-        # Fron -150 to 150 includes E. not W
+        # Fron -150 to 150 includes E not W
         mask = sector_mask((100, 100), (-150, 150))
         self.assertFalse(mask[50, 10])
         self.assertTrue(mask[50, 90])
 
-        # Fron -210 to 150 includes W. not E
+        # Fron -210 to 150 includes W not E
         mask = sector_mask((100, 100), (-210, -150))
         self.assertTrue(mask[50, 10])
         self.assertFalse(mask[50, 60])
 
-        # Fron 150 to 210 includes W. not E
+        # Fron 150 to 210 includes W not E
         mask = sector_mask((100, 100), (-210, -150))
         self.assertTrue(mask[50, 10])
         self.assertFalse(mask[50, 60])
