@@ -5,6 +5,7 @@ from astropy import units as u
 import matplotlib
 import matplotlib.pyplot as plt
 from appoppy.mask import mask_from_median
+import logging
 
 
 class PhaseShiftInterferometer():
@@ -27,6 +28,7 @@ class PhaseShiftInterferometer():
         self._os1 = optical_system_1
         self._os2 = optical_system_2
         self._should_unwrap = False
+        self._log = logging.getLogger('appoppy')
         # assert self._os1.wavelength == self._os2.wavelength
         # TODO probably some check?
 
@@ -44,15 +46,18 @@ class PhaseShiftInterferometer():
     def _propagate(self):
         self._wv1 = self._os1.pupil_wavefront()
         self._wv2 = self._os2.pupil_wavefront()
-        return self._ios.propagate(
+        ret = self._ios.propagate(
             self._ios.input_wavefront(self._os1.wavelength,
                                       self._wv1 + self._wv2))
+        return ret
 
     def _phase_shift_step(self, step):
+        self._log.info('phase shift step %g' % step)
         self._os1.set_phase_shift(step)
         return self._propagate()
 
     def acquire(self):
+        self._log.info('phase shift acquisition')
         self._wf_0 = self._phase_shift_step(0)
         self._wf_1 = self._phase_shift_step(0.25)
         self._wf_2 = self._phase_shift_step(0.5)

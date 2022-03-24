@@ -9,6 +9,8 @@ from poppy.poppy_core import PlaneType
 import skimage
 from appoppy.mask import mask_from_median
 from appoppy.elt_aperture import ELTAperture
+import logging
+from appoppy.maory_residual_wfe import MaoryResidualWavefront
 
 
 class EltForPetalometry(object):
@@ -18,24 +20,39 @@ class EltForPetalometry(object):
                  r0=0.2,
                  npix=256,
                  rotation_angle=0,
-                 seed=0):
+                 kolm_seed=0,
+                 residual_wavefront_index=100,
+                 residual_wavefront_average_on=1,
+                 name=''):
+        self.name = name
+        self._log = logging.getLogger('EltForPetalometry-%s' % self.name)
         self.wavelength = 2.2e-6 * u.m
         self.telescope_radius = 19.8 * u.m
         self.lambda_over_d = (
             self.wavelength / (2 * self.telescope_radius)).to(
                 u.arcsec, equivalencies=u.dimensionless_angles())
-        self._kolm_seed = seed
-        self.r0 = r0 * u.m * (self.wavelength / (0.5e-6 * u.m))**(6 / 5)
+        self._kolm_seed = kolm_seed
         self.pupil_rotation_angle = rotation_angle
 
         self._osys = poppy.OpticalSystem(oversample=2,
                                          npix=npix,
                                          pupil_diameter=2 * self.telescope_radius)
-        self._osys.add_pupil(poppy.KolmogorovWFE(
-            name='Turbulence',
-            r0=self.r0,
-            dz=1,
-            seed=self._kolm_seed))
+        if r0 is not np.inf:
+            self.r0 = r0 * u.m * (self.wavelength / (0.5e-6 * u.m))**(6 / 5)
+            self._osys.add_pupil(poppy.KolmogorovWFE(
+                name='Turbulence',
+                r0=self.r0,
+                dz=1,
+                seed=self._kolm_seed))
+        else:
+            self._residual_wf = MaoryResidualWavefront()
+            self._residual_wf_idx = residual_wavefront_index
+            self._residual_wf_ave = residual_wavefront_average_on
+            self._osys.add_pupil(
+                self._residual_wf.as_optical_element(
+                    step=self._residual_wf_idx,
+                    average_on=self._residual_wf_ave))
+
         self._osys.add_pupil(poppy.ZernikeWFE(name='Zernike WFE',
                                               coefficients=zern_coeff,
                                               radius=self.telescope_radius))
@@ -87,6 +104,7 @@ class EltForPetalometry(object):
         self._osys.planes[self._phase_shift_plane] = in_wfe
 
     def propagate(self):
+        self._log.info('propagating')
         _, self._intermediates_wfs = self._osys.propagate(
             self._osys.input_wavefront(self.wavelength),
             normalize='first',

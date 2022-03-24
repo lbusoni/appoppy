@@ -2,25 +2,27 @@ import matplotlib.pyplot as plt
 import astropy.units as u
 import numpy as np
 from appoppy.petalometer import Petalometer
-from appoppy.package_data import data_root_dir
-import os
-import scipy.io
 import poppy
-from appoppy.elt_aperture import restore_elt_pupil_mask, ELTAperture
+from appoppy.elt_aperture import ELTAperture
 
 
 def main(r0=np.inf,
          petals=np.random.uniform(-1100, 1100, 6) * u.nm,
-         rotation_angle=10):
-    p = Petalometer(r0=r0, petals=petals, rotation_angle=rotation_angle)
+         rotation_angle=10,
+         residual_wavefront_average_on=100):
+    p = Petalometer(r0=r0,
+                    petals=petals,
+                    rotation_angle=rotation_angle,
+                    residual_wavefront_average_on=residual_wavefront_average_on)
     return p
 
 
 def error(r0=np.inf,
           petals=np.random.uniform(-1100, 1100, 6) * u.nm,
-          rotation_angle=10):
+          rotation_angle=10,
+          niter=10):
     res = []
-    for i in range(100):
+    for i in range(niter):
         p = Petalometer(r0=r0, petals=petals, rotation_angle=rotation_angle)
         res.append(p.error_petals())
         print(p.error_petals())
@@ -32,18 +34,6 @@ def error(r0=np.inf,
 def apply_petals(p, petals=np.random.uniform(-1000, 1000, 6) * u.nm):
     p.set_m4_petals(petals)
     p.sense_wavefront_jumps()
-
-
-def restore_residual_wavefront():
-
-    fname = os.path.join(data_root_dir(),
-                         '20210518_223459.0',
-                         'CUBE_OLCUBE_CL_coo0.0_0.0.sav')
-    idl_dict = scipy.io.readsav(fname)
-    phase_screen = np.moveaxis(idl_dict['cube_k'], 2, 0)
-    mask = restore_elt_pupil_mask().data
-    cmask = np.tile(mask, (phase_screen.shape[0], 1, 1))
-    return np.ma.masked_array(phase_screen, mask=cmask)
 
 
 def test_fits_optical_element():
@@ -62,11 +52,16 @@ def reload():
     from appoppy import phase_shift_interferometer
     from appoppy import petalometer
     from appoppy.mains import main220307_shear_interferometer
+    from appoppy import petaled_m4
+    from appoppy import elt_aperture
+    from appoppy import maory_residual_wfe
     importlib.reload(elt_for_petalometry)
     importlib.reload(phase_shift_interferometer)
     importlib.reload(petalometer)
     importlib.reload(main220307_shear_interferometer)
-
+    importlib.reload(petaled_m4)
+    importlib.reload(elt_aperture)
+    importlib.reload(maory_residual_wfe)
 
 # def test_turb_variance(niter=10, r0=1, rotation_angle=10):
 #     res = []

@@ -10,21 +10,34 @@ class Petalometer():
 
     def __init__(self,
                  r0=np.inf,
+                 residual_wavefront_index=None,
+                 residual_wavefront_average_on=10,
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  rotation_angle=15,
                  zernike=[0, 0],
                  seed=None):
         if seed is None:
             seed = np.random.randint(2147483647)
+        if residual_wavefront_index:
+            residual_wavefront_index = np.random.randint(100, 1000)
 
+        npix = 240
         self._model1 = EltForPetalometry(
             r0=r0,
-            seed=seed,
-            rotation_angle=rotation_angle)
+            kolm_seed=seed,
+            rotation_angle=rotation_angle,
+            npix=npix,
+            residual_wavefront_index=residual_wavefront_index,
+            residual_wavefront_average_on=residual_wavefront_average_on,
+            name='M1')
 
         self._model2 = EltForPetalometry(
             r0=r0,
-            seed=seed)
+            kolm_seed=seed,
+            npix=npix,
+            residual_wavefront_index=residual_wavefront_index,
+            residual_wavefront_average_on=residual_wavefront_average_on,
+            name='M2')
 
         self.set_m4_petals(petals)
         self.set_zernike_wavefront(zernike)
