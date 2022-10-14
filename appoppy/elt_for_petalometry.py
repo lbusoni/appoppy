@@ -17,11 +17,12 @@ class EltForPetalometry(object):
 
     def __init__(self,
                  zern_coeff=[0.0],
-                 r0=0.2,
+                 r0=np.inf,
                  npix=256,
                  rotation_angle=0,
                  kolm_seed=0,
-                 residual_wavefront_index=100,
+                 residual_wavefront_start_from=100,
+                 residual_wavefront_step=1,
                  residual_wavefront_average_on=1,
                  name=''):
         self.name = name
@@ -45,13 +46,10 @@ class EltForPetalometry(object):
                 dz=1,
                 seed=self._kolm_seed))
         else:
-            self._residual_wf = MaoryResidualWavefront()
-            self._residual_wf_idx = residual_wavefront_index
-            self._residual_wf_ave = residual_wavefront_average_on
-            self._osys.add_pupil(
-                self._residual_wf.as_optical_element(
-                    step=self._residual_wf_idx,
-                    average_on=self._residual_wf_ave))
+            self._osys.add_pupil(MaoryResidualWavefront(
+                start_from=residual_wavefront_start_from,
+                step=residual_wavefront_step,
+                average_on=residual_wavefront_average_on))
 
         self._osys.add_pupil(poppy.ZernikeWFE(name='Zernike WFE',
                                               coefficients=zern_coeff,

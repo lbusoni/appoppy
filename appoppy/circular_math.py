@@ -7,6 +7,23 @@ class _CircularMath():
 
     @classmethod
     def zero_mean(cls, opd_data, wavelength):
+        '''
+        ???? an optical path difference (opd) expressed in nm 
+        
+
+        Parameters
+        ----------
+        opd_data: astropy.units.Quantity in length units
+            optical path difference
+
+        wavelength: astropy.units.Quantity in length units
+            wavelength used to convert opd into phase
+
+        Returns
+        -------
+        opd: float
+            opd ????
+        '''
         ang_a = cls.to_radians(opd_data, wavelength)
         mu = cls.to_nm(circmean(ang_a), wavelength)
         return cls.difference(opd_data, mu, wavelength)
@@ -33,7 +50,7 @@ class _CircularMath():
         Returns
         -------
         opd: float
-            opd converted in radians in (-pi, pi) domain
+            opd converted in radians in (-inf, inf) domain
         '''
         dpi = 2 * np.pi
         return opd_data.to_value(u.nm) / wavelength.to_value(u.nm) * dpi

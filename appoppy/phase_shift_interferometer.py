@@ -103,11 +103,11 @@ class PhaseShiftInterferometer():
     def pupil_phase(self):
         return self._ios_wf.phase
 
-    def display_pupil_intensity(self):
-        self._ios_wf.display(what='intensity')
+    def display_pupil_intensity(self, **kwargs):
+        self._ios_wf.display(what='intensity', **kwargs)
 
-    def display_pupil_phase(self):
-        self._ios_wf.display(what='phase')
+    def display_pupil_phase(self, **kwargs):
+        self._ios_wf.display(what='phase', **kwargs)
 
     def _pump_up_zero_for_log_display(self, image):
         ret = image * 1.0

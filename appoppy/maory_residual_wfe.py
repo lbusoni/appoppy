@@ -45,12 +45,64 @@ def restore_residual_wavefront():
     return np.ma.masked_array(dat, mask=cmask), hdr
 
 
-class MaoryResidualWavefront():
+class MaoryResidualWavefront(ArrayOpticalElement):
+    '''
+    Return an OpticalElement whose opd represents the MAORY residual wavefront
+    simulated by PASSATA
 
-    def __init__(self):
+    Data consists of 1275 frames sampled at 500Hz of residual wavefront on-axis
+    in median conditions
+
+    Parameters
+    ----------
+    start_from: int (optional, default=100)
+        first frame to use
+    step: int (optional, default=1)
+        how many frames to jump at each get_opd call
+    average_on: int (optional, default=1)
+        how many frames to average on each get_opd call
+    adjust_factor: float (optional, default=1)
+        multiply residual by
+
+    Example
+    -------
+    MaoryResidualWavefron(start_from=200, step=0, average_on=1) returns always
+    the 200th frame
+
+    MaoryResidualWavefron(start_from=200, step=50, average_on=10) yields
+    (mean(200:210), mean(250:260), mean(300:310)...)
+    '''
+    _START_FROM = 100
+
+    def __init__(self, 
+                 start_from=None, 
+                 step=1, 
+                 average_on=1,
+                 adjust_factor=0.1, 
+                 **kwargs):
         self._res_wf, hdr = restore_residual_wavefront()
         self._pxscale = hdr['PIXELSCL'] * u.m / u.pixel
-        self._step_idx = 100  # skip first 100 frames
+        self._nframes = self._res_wf.shape[0]
+        self._adjust_factor = adjust_factor
+
+        if start_from is None:
+            self._start_from = self._START_FROM
+        else:
+            self._start_from = start_from
+        self._step = step
+        self._average_on = average_on
+        self._step_idx = np.maximum(
+            0, np.minimum(self._start_from, self._nframes))
+        self.amplitude = (~self._res_wf[self._START_FROM].mask).astype(int)
+        super(MaoryResidualWavefront, self).__init__(
+            transmission=self.amplitude, pixelscale=self._pxscale, **kwargs)
+
+    def get_opd(self, wave):
+        first = self._step_idx
+        last = np.minimum(self._step_idx + self._average_on, self._nframes)
+        self.opd = np.mean(self._res_wf[first:last].data, axis=0) * 1e-9
+        self._step_idx = (self._step_idx + self._step) % self._nframes
+        return self.opd * self._adjust_factor
 
     def as_optical_element(self, step=None, average_on=1):
         if step is None:

@@ -4,6 +4,7 @@ import numpy as np
 from appoppy.petalometer import Petalometer
 import poppy
 from appoppy.elt_aperture import ELTAperture
+from appoppy.maory_residual_wfe import MaoryResidualWavefront
 
 
 def main(r0=np.inf,
@@ -24,8 +25,8 @@ def error(r0=np.inf,
     res = []
     for i in range(niter):
         p = Petalometer(r0=r0, petals=petals, rotation_angle=rotation_angle)
-        res.append(p.error_petals())
-        print(p.error_petals())
+        res.append(p.error_petals)
+        print(p.error_petals)
     ret = np.array(res)
     print(ret.std())
     return ret
@@ -34,6 +35,7 @@ def error(r0=np.inf,
 def apply_petals(p, petals=np.random.uniform(-1000, 1000, 6) * u.nm):
     p.set_m4_petals(petals)
     p.sense_wavefront_jumps()
+    return p.error_petals
 
 
 def test_fits_optical_element():
@@ -55,13 +57,40 @@ def reload():
     from appoppy import petaled_m4
     from appoppy import elt_aperture
     from appoppy import maory_residual_wfe
+    importlib.reload(petaled_m4)
+    importlib.reload(maory_residual_wfe)
     importlib.reload(elt_for_petalometry)
+    importlib.reload(elt_aperture)
     importlib.reload(phase_shift_interferometer)
     importlib.reload(petalometer)
     importlib.reload(main220307_shear_interferometer)
-    importlib.reload(petaled_m4)
-    importlib.reload(elt_aperture)
-    importlib.reload(maory_residual_wfe)
+
+
+def test_maory_residuals():
+    npix = 240
+    wl = 2.2e-6
+    ss = poppy.OpticalSystem(pupil_diameter=40)
+    ss.add_pupil(ELTAperture())
+    ss.add_detector(pixelscale=0.004, fov_arcsec=1.0)
+    dl = ss.calc_psf(wl)[0].data
+    dlmax = (dl / dl.sum())[250, 250]
+
+    ss = poppy.OpticalSystem(pupil_diameter=40)
+    ss.add_pupil(MaoryResidualWavefront(start_from=100, average_on=1))
+    ss.add_pupil(ELTAperture())
+    ss.add_detector(pixelscale=0.004, fov_arcsec=1.0)
+    psfs = []
+    for _ in range(100):
+        psf = ss.calc_psf(wl)[0].data
+        print("se sr %g" % (psf / psf.sum() / dlmax)[250, 250])
+        psfs.append(psf)
+    psfs = np.array(psfs)
+
+    longexp = np.mean(psfs, axis=0)
+    longexpmax = (longexp / longexp.sum())[250, 250]
+    print("sr %g" % (longexpmax / dlmax))
+
+    return ss, psfs, dl, longexp
 
 # def test_turb_variance(niter=10, r0=1, rotation_angle=10):
 #     res = []

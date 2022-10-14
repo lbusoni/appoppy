@@ -10,7 +10,6 @@ class Petalometer():
 
     def __init__(self,
                  r0=np.inf,
-                 residual_wavefront_index=None,
                  residual_wavefront_average_on=10,
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  rotation_angle=15,
@@ -18,8 +17,8 @@ class Petalometer():
                  seed=None):
         if seed is None:
             seed = np.random.randint(2147483647)
-        if residual_wavefront_index:
-            residual_wavefront_index = np.random.randint(100, 1000)
+        #if residual_wavefront_index:
+        #    residual_wavefront_index = np.random.randint(100, 1000)
 
         npix = 240
         self._model1 = EltForPetalometry(
@@ -27,16 +26,16 @@ class Petalometer():
             kolm_seed=seed,
             rotation_angle=rotation_angle,
             npix=npix,
-            residual_wavefront_index=residual_wavefront_index,
             residual_wavefront_average_on=residual_wavefront_average_on,
+            residual_wavefront_step=residual_wavefront_average_on,
             name='M1')
 
         self._model2 = EltForPetalometry(
             r0=r0,
             kolm_seed=seed,
             npix=npix,
-            residual_wavefront_index=residual_wavefront_index,
             residual_wavefront_average_on=residual_wavefront_average_on,
+            residual_wavefront_step=residual_wavefront_average_on,
             name='M2')
 
         self.set_m4_petals(petals)
@@ -55,7 +54,8 @@ class Petalometer():
         self._model2.set_input_wavefront_zernike(zernike_coefficients)
 
     def set_m4_petals(self, petals):
-        self._petals = zero_mean(petals, self.wavelength)
+        #self._petals = zero_mean(petals, self.wavelength)
+        self._petals = petals
         self._model1.set_m4_petals(self._petals)
         self._model2.set_m4_petals(self._petals)
 
@@ -72,20 +72,45 @@ class Petalometer():
         self._i4.acquire()
         self._i4.display_interferogram()
         self._compute_jumps()
-        return self.error_jumps()
+        return self.error_jumps
 
+    @property
     def _expected_jumps(self):
         dd = np.repeat(self.petals, 2)
-        return wrap_around_zero(np.roll(dd, 1) - dd,
-                                self.wavelength)
+        #return wrap_around_zero(np.roll(dd, 1) - dd,
+        #                        self.wavelength)
+        return np.roll(dd, 1) - dd
 
+    @property
     def error_jumps(self):
-        return wrap_around_zero(
-            (self._expected_jumps() - self._jumps).to(u.nm),
-            self.wavelength)
+        #return wrap_around_zero(
+        #    (self._expected_jumps() - self._jumps).to(u.nm),
+        #    self.wavelength)
+        return (self._expected_jumps - self.all_jumps).to(u.nm)
 
+    @property
     def error_petals(self):
-        return difference(self.estimated_petals(), self.petals, self.wavelength)
+        #return difference(self.estimated_petals, self.petals, self.wavelength)
+        diff =  self.estimated_petals - self.petals
+        return diff - diff[0]
+
+    @property
+    def across_islands_jumps(self):
+        '''
+        Measure OPD between sectors separated by a spider 
+        '''
+        return self._jumps[::2]
+
+    @property
+    def all_jumps(self):
+        '''
+        Measured OPD between all sectors.
+        
+        Even-th jumps correspond to the interference of a segment with itself, so
+        they should be nominally zero.
+        Odd-th jumps correspond to OPD across islands, what we are interested in. 
+        '''
+        return self._jumps
 
     def _compute_jumps(self):
         r = self._model1.pupil_rotation_angle
@@ -97,8 +122,9 @@ class Petalometer():
             ifm = self._mask_ifgram(image, (angs[i + 1], angs[i]))
             res[i] = np.ma.median(ifm)
 
-        self._jumps = wrap_around_zero(
-            res * u.nm, self.wavelength)
+        #self._jumps = wrap_around_zero(
+        #    res * u.nm, self.wavelength)
+        self._jumps = res * u.nm
 
     def _mask_ifgram(self, ifgram, angle_range):
         smask1 = sector_mask(ifgram.shape,
@@ -119,12 +145,15 @@ class Petalometer():
         ])
         return np.linalg.pinv(mm)
 
+    @property
     def estimated_petals_wrong(self):
         return wrap_around_zero(
             np.dot(self._jumps_to_petals_matrix(),
-                   np.append(self._jumps[::2], 0)),
+                   np.append(self.across_islands_jumps, 0)),
             self.wavelength)
 
+    @property
     def estimated_petals(self):
-        res = -1 * np.cumsum(self._jumps[::2])
-        return zero_mean(res, self.wavelength)
+        res = -1 * np.cumsum(self.across_islands_jumps)
+        #return zero_mean(res, self.wavelength)
+        return res
