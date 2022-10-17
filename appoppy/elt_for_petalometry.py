@@ -18,11 +18,11 @@ class EltForPetalometry(object):
     def __init__(self,
                  zern_coeff=[0.0],
                  r0=np.inf,
-                 npix=256,
+                 npix=480,
                  rotation_angle=0,
                  kolm_seed=0,
                  residual_wavefront_start_from=100,
-                 residual_wavefront_step=1,
+                 residual_wavefront_step=0,
                  residual_wavefront_average_on=1,
                  name=''):
         self.name = name
@@ -35,6 +35,7 @@ class EltForPetalometry(object):
         self._kolm_seed = kolm_seed
         self.pupil_rotation_angle = rotation_angle
 
+
         self._osys = poppy.OpticalSystem(oversample=2,
                                          npix=npix,
                                          pupil_diameter=2 * self.telescope_radius)
@@ -46,6 +47,7 @@ class EltForPetalometry(object):
                 dz=1,
                 seed=self._kolm_seed))
         else:
+            self.r0 = np.inf
             self._osys.add_pupil(MaoryResidualWavefront(
                 start_from=residual_wavefront_start_from,
                 step=residual_wavefront_step,
@@ -67,6 +69,7 @@ class EltForPetalometry(object):
             pixelscale=0.5 * self.lambda_over_d / (1 * u.pixel),
             fov_arcsec=1)
 
+        self._turbulence_plane = 0
         self._zernike_wavefront_plane = 1
         self._m4_wavefront_plane = 2
         self._phase_shift_plane = -4
@@ -100,6 +103,13 @@ class EltForPetalometry(object):
             planetype=PlaneType.pupil,
             name='phase_shift')
         self._osys.planes[self._phase_shift_plane] = in_wfe
+
+    def set_step_idx(self, step_idx):
+        # advance residual phase screen only in the case of MORFEO
+        # otherwise is Kolmogorov, every screen uncorrelated, no wind speed
+        if self.r0 is np.inf: 
+            self._reset_intermediate_wfs()
+            self._osys.planes[self._turbulence_plane].set_step_idx(step_idx)
 
     def propagate(self):
         self._log.info('propagating')
@@ -143,12 +153,27 @@ class EltForPetalometry(object):
         return self.pupil_wavefront().intensity
 
     def pupil_opd_unwrapped(self):
-        mask = mask_from_median(self.pupil_intensity(), 3)
+        mask = self.pupil_mask()
         minv = np.logical_not(mask).astype(int)
         unwrap = skimage.restoration.unwrap_phase(
             self.pupil_phase() * minv)
         return np.ma.array(unwrap / 2 / np.pi * self.wavelength.to_value(u.nm),
                            mask=mask)
+
+    def pupil_mask(self):
+        return mask_from_median(self.pupil_intensity(), 10)
+
+    def pupil_opd(self):
+        osys=self._osys
+        opd0= osys.planes[self._turbulence_plane].get_opd(
+            osys.input_wavefront(self.wavelength))
+        opd1= osys.planes[self._zernike_wavefront_plane].get_opd(
+            osys.input_wavefront(self.wavelength))
+        opd2= osys.planes[self._m4_wavefront_plane].get_opd(
+            osys.input_wavefront(self.wavelength))
+        
+        opdm= np.ma.MaskedArray(opd0+opd1+opd2, mask=self.pupil_mask())
+        return opdm * 1e9
 
     def _display_on_plane(self, what, plane_number, scale='linear'):
         wave = self._wave(plane_number)
@@ -195,6 +220,20 @@ class EltForPetalometry(object):
 
     def display_pupil_phase(self, **kw):
         self.display_phase_on_plane(self._exit_pupil_plane, **kw)
+
+    def display_pupil_opd(self, **kw):
+        wave = self._wave(0)
+        image = self.pupil_opd()
+        norm = matplotlib.colors.Normalize()
+        cmap = 'cividis'
+        pc = wave.pupil_coordinates(image.shape, wave.pixelscale)
+        extent = [pc[0].min(), pc[0].max(), pc[1].min(), pc[1].max()]
+
+        plt.clf()
+        plt.imshow(image, norm=norm, extent=extent, origin='lower', cmap=cmap)
+        plt.title("Total OPD")
+        plt.colorbar()
+
 
     def plot_pupil_intensity_row(self, row=None, scale='linear'):
         aa = self._wave(self._exit_pupil_plane)

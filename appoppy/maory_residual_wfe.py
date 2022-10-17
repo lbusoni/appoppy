@@ -50,19 +50,17 @@ class MaoryResidualWavefront(ArrayOpticalElement):
     Return an OpticalElement whose opd represents the MAORY residual wavefront
     simulated by PASSATA
 
-    Data consists of 1275 frames sampled at 500Hz of residual wavefront on-axis
+    Data consists of 1375 frames sampled at 500Hz of residual wavefront on-axis
     in median conditions
 
     Parameters
     ----------
     start_from: int (optional, default=100)
         first frame to use
-    step: int (optional, default=1)
+    step: int (optional, default=0)
         how many frames to jump at each get_opd call
     average_on: int (optional, default=1)
         how many frames to average on each get_opd call
-    adjust_factor: float (optional, default=1)
-        multiply residual by
 
     Example
     -------
@@ -76,14 +74,12 @@ class MaoryResidualWavefront(ArrayOpticalElement):
 
     def __init__(self, 
                  start_from=None, 
-                 step=1, 
+                 step=0, 
                  average_on=1,
-                 adjust_factor=0.1, 
                  **kwargs):
         self._res_wf, hdr = restore_residual_wavefront()
         self._pxscale = hdr['PIXELSCL'] * u.m / u.pixel
         self._nframes = self._res_wf.shape[0]
-        self._adjust_factor = adjust_factor
 
         if start_from is None:
             self._start_from = self._START_FROM
@@ -97,12 +93,19 @@ class MaoryResidualWavefront(ArrayOpticalElement):
         super(MaoryResidualWavefront, self).__init__(
             transmission=self.amplitude, pixelscale=self._pxscale, **kwargs)
 
+    def set_step_idx(self, step_idx):
+        self._step_idx = step_idx
+
     def get_opd(self, wave):
         first = self._step_idx
         last = np.minimum(self._step_idx + self._average_on, self._nframes)
         self.opd = np.mean(self._res_wf[first:last].data, axis=0) * 1e-9
+        self._remove_global_piston()
         self._step_idx = (self._step_idx + self._step) % self._nframes
-        return self.opd * self._adjust_factor
+        return self.opd
+
+    def _remove_global_piston(self):
+        self.opd -= self.opd.mean()
 
     def as_optical_element(self, step=None, average_on=1):
         if step is None:

@@ -43,10 +43,16 @@ def pink_noise(f):
 def white_noise_10(f):
     return np.where(f<0.001, 1, 0);
 
+@PSDGenerator
+def mcao_residual(f):
+    cutf=0.005
+    powerlaw = -1.
+    return np.where(f<=cutf, 1, f**powerlaw / (cutf**powerlaw))
+
 
 def main_plot_noise_generators():
     plt.figure(figsize=(8, 8))
-    for G in [brownian_noise, pink_noise, white_noise, blue_noise, violet_noise, white_noise_10]:
+    for G in [brownian_noise, pink_noise, white_noise, blue_noise, violet_noise, mcao_residual]:
         plot_spectrum(G(2**14))
     plt.legend(['brownian', 'pink', 'white', 'blue', 'violet', '<10'])
     plt.ylim([1e-3, None]);
@@ -135,16 +141,25 @@ class AOResidual():
         frequencies = np.fft.rfftfreq(signal.shape[0], d=dt)
         return power_spectrum, frequencies
 
-    def _structure_function_sep(self, sep_px, a_moment=None, wavelength_nm=500):
+    def _structure_function_sep(self, sep_px, a_moment=None):
         if a_moment is None:
             a_moment = 500
         scr2 = np.roll(self._screens, sep_px, axis=2)
         dd = (self._screens[a_moment]-scr2[a_moment])[:,sep_px:]
-        return np.mean( (dd*2*np.pi/wavelength_nm)**2) 
+        return np.mean(dd**2) 
 
     def structure_function(self, a_moment=500):
         '''
         Structure function of residual phase, computed on the full pupil
+        
+        $D_{\phi}(\rho) = average( (\phi(r+\rho)-\phi(r))^2) )
+            
+        Returns
+        -------
+        stf, rho: tuple of `numpy.array`
+            First element contains the structure function in nm**2
+            Second elements contains the separation at which the structure function has been computed in m
+        
         '''
         seps_px = np.array([1,2,5,10,20,50,100])
         stf= np.zeros_like(seps_px)
@@ -169,10 +184,11 @@ class AOResidual():
         plt.semilogy(stf_x * self._pxscale, stf_rad2_0, label='t=0s')
         plt.semilogy(stf_x * self._pxscale, stf_rad2_1, label='t=1s')
         plt.xlabel(r'separation $\rho$  [m]')
-        plt.ylabel(r'$D_{\phi}$ of residual phase $[rad^2]$')
+        plt.ylabel(r'$D_{\phi}$ of residual phase $[nm^2]$')
         plt.grid(True)
         plt.legend()
         return stf_rad2_0, stf_rad2_1, stf_x
+
 
 class Demodulation():
 
@@ -183,30 +199,60 @@ class Demodulation():
         self._dt = 0.001
         self._t=np.arange(0, 1, self._dt)
         self._sz = len(self._t)
+        self._r = None 
         
         self._carrier()
         
         self._p=np.zeros_like(self._t)+ self._piston_amp
-        self._n=pink_noise(2*self._sz)[0:self._sz]* self._noise_amp
+        
+        #self._n=pink_noise(2*self._sz)[0:self._sz]* self._noise_amp
+        self._n=mcao_residual(2*self._sz)[0:self._sz]* self._noise_amp
         #self._n=white_noise_10(2*self._sz)[0:self._sz]* self._noise_amp
         self._s=self._p+self._n
-        self._r = self._p* self._cc + self._n
+        
+        # standard AM 
+        #self._compute_amplitude_modulated_signal()
+        #self._am_demodulation(self._r)
+        # piston modulation
+        self._compute_piston_modulated_signal()
+        self._piston_demodulation(self._r)
         
         #self._modem_fft(self._r)
-        self._modem(self._r)
-        #self._result()
+        #self.print_result()
+
+    def _compute_amplitude_modulated_signal(self):
+        self._r = self._p* self._cc + self._n
+
+    def _compute_piston_modulated_signal(self):
+        self._wavelen = 2200
+        self._pm = 20
+        self._r = np.cos(self._nm2rad(self._p+self._n + self._pm * self._ss)) 
+
+    def _nm2rad(self, nm):
+        return 2*np.pi/self._wavelen*nm
+
+    def _rad2nm(self, rad):
+        return self._wavelen/(2*np.pi)*rad
     
     def _carrier(self):
-        self._fm = 200 
+        self._fm = 100 
         self._cc=np.cos(2*np.pi*self._fm*self._t)
         self._ss=np.sin(2*np.pi*self._fm*self._t)
     
-    def _modem(self, modulated_signal):
+    def _am_demodulation(self, modulated_signal):
         self._rc = modulated_signal * self._cc
         self._rs= modulated_signal * self._ss
         self._estimated_amp = 2*np.sqrt(self._rc.mean()**2 + self._rs.mean()**2)
         self._estimated_phase = np.arctan2(self._rs.mean(), self._rc.mean())
         #self._estimated_amp = 2* rc.mean()
+
+    def _piston_demodulation(self, modulated_signal):
+        self._rc = modulated_signal * self._cc
+        self._rs= modulated_signal * self._ss
+        amp= self._rad2nm(np.arcsin(-2 * self._rs.mean() / self._nm2rad(self._pm)))
+        self._estimated_amp = amp
+        self._estimated_phase = 0
+
 
     def _rfft(self, signal, dt):
         spectrum= np.fft.rfft(signal, norm='ortho')
@@ -239,7 +285,7 @@ class Demodulation():
         return self._estimated_amp
         
 
-    def _result(self):
+    def print_result(self):
         print("estimated amp %g" % self._estimated_amp)
         print("estimated phase %g" % self._estimated_phase)
         print("_p %g" % self._p.mean())
@@ -258,11 +304,12 @@ class Demodulation():
         
 
 
-def main_stat(noise):
+def main_stat(noise, piston=0):
     n = 1000
     res = np.zeros((2, n))
     for i in range(n):
-        dd = Demodulation(1, noise)
+        dd = Demodulation(piston, noise)
         res[:,i] = [dd.s, dd.p]
+    print('mean  mean/demod  %s'  % np.mean(res, axis=1)) 
     print('stdev mean/demod  %s'  % np.std(res, axis=1)) 
     return res

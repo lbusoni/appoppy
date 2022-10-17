@@ -3,14 +3,15 @@ import numpy as np
 from appoppy.phase_shift_interferometer import PhaseShiftInterferometer
 from appoppy.elt_for_petalometry import EltForPetalometry
 from appoppy.mask import sector_mask
-from appoppy.circular_math import wrap_around_zero, zero_mean, difference
+from appoppy.circular_math import wrap_around_zero
+import logging
 
 
 class Petalometer():
 
     def __init__(self,
                  r0=np.inf,
-                 residual_wavefront_average_on=10,
+                 residual_wavefront_average_on=1,
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  rotation_angle=15,
                  zernike=[0, 0],
@@ -20,22 +21,23 @@ class Petalometer():
         #if residual_wavefront_index:
         #    residual_wavefront_index = np.random.randint(100, 1000)
 
-        npix = 240
+        self._log = logging.getLogger('appoppy')
+        self._step_idx = 0
+        self._res_average_on = residual_wavefront_average_on
+
         self._model1 = EltForPetalometry(
             r0=r0,
             kolm_seed=seed,
             rotation_angle=rotation_angle,
-            npix=npix,
             residual_wavefront_average_on=residual_wavefront_average_on,
-            residual_wavefront_step=residual_wavefront_average_on,
+            residual_wavefront_step=0,
             name='M1')
 
         self._model2 = EltForPetalometry(
             r0=r0,
             kolm_seed=seed,
-            npix=npix,
             residual_wavefront_average_on=residual_wavefront_average_on,
-            residual_wavefront_step=residual_wavefront_average_on,
+            residual_wavefront_step=0,
             name='M2')
 
         self.set_m4_petals(petals)
@@ -49,9 +51,9 @@ class Petalometer():
     def wavelength(self):
         return self._model1.wavelength
 
-    def set_zernike_wavefront(self, zernike_coefficients):
-        self._model1.set_input_wavefront_zernike(zernike_coefficients)
-        self._model2.set_input_wavefront_zernike(zernike_coefficients)
+    def set_zernike_wavefront(self, zernike_coefficients_in_m):
+        self._model1.set_input_wavefront_zernike(zernike_coefficients_in_m)
+        self._model2.set_input_wavefront_zernike(zernike_coefficients_in_m)
 
     def set_m4_petals(self, petals):
         #self._petals = zero_mean(petals, self.wavelength)
@@ -68,11 +70,21 @@ class Petalometer():
     def petals(self):
         return self._petals.to(u.nm)
 
+
     def sense_wavefront_jumps(self):
         self._i4.acquire()
         self._i4.display_interferogram()
         self._compute_jumps()
         return self.error_jumps
+
+    def advance_step_idx(self):
+        self.set_step_idx(self._step_idx + self._res_average_on)
+
+    def set_step_idx(self, step_idx):
+        self._step_idx = step_idx
+        self._log.info('set time step to %g' % self._step_idx)
+        self._model1.set_step_idx(self._step_idx)
+        self._model2.set_step_idx(self._step_idx)
 
     @property
     def _expected_jumps(self):
