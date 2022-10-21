@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal
-from appoppy.maory_residual_wfe import restore_residual_wavefront
 
 def plot_spectrum(s):
     f = np.fft.rfftfreq(len(s))
@@ -94,100 +93,6 @@ class PowerSpectralDensityNotFinished():
         plt.ylabel('PSD [V**2/Hz]')
         plt.show()
 
-
-class AOResidual():
-    
-    def __init__(self):
-        resscreen, hdr = restore_residual_wavefront()
-        self._pxscale = float(hdr['PIXELSCL'])
-        self._screens = resscreen
-        self._spider_x_coord = 240
-        self._valid_y_min = 20 
-        self._valid_y_max = 160 
-        self._dt = 0.002
-        self._t_steps = self._screens.shape[0]
-        self._t = np.arange(0, self._t_steps*self._dt, self._dt)
-        
-    def difference_across_spider_at(self, separation_in_meter, rows=None):
-        if rows is None:
-            rows = np.arange(self._valid_y_min, self._valid_y_max)
-        if np.isscalar(rows):
-            rows = np.repeat(rows,2) 
-        sep_px = round(0.5 * separation_in_meter / self._pxscale)
-        idx_x = (self._spider_x_coord - sep_px, self._spider_x_coord + sep_px)
-        two_cols =  self._screens[np.ix_(np.arange(self._t_steps), rows, idx_x)]  
-        return two_cols[:,:,1] - two_cols[:,:,0]
-
-    def _rfft(self, signal, dt):
-        '''
-        Return power spectrum of input array
-        
-        Parameters
-        ----------
-        signal: np.array
-            axis=0 is the temporal dimension
-            axis=1 is a spatial dimension.
-        
-        Returns
-        -------
-        temporal power spectrum of signal, averaged along the spatial dimension
-        '''
-        if isinstance(signal, np.ma.MaskedArray):
-            if np.any(signal.mask == True):
-                raise Exception('masked signal. fft output is unreliable')
-            signal = signal.filled()
-        ft= np.fft.rfft(signal, norm='ortho', axis=0)
-        power_spectrum= np.mean(np.abs(ft**2), axis=1)
-        frequencies = np.fft.rfftfreq(signal.shape[0], d=dt)
-        return power_spectrum, frequencies
-
-    def _structure_function_sep(self, sep_px, a_moment=None):
-        if a_moment is None:
-            a_moment = 500
-        scr2 = np.roll(self._screens, sep_px, axis=2)
-        dd = (self._screens[a_moment]-scr2[a_moment])[:,sep_px:]
-        return np.mean(dd**2) 
-
-    def structure_function(self, a_moment=500):
-        '''
-        Structure function of residual phase, computed on the full pupil
-        
-        $D_{\phi}(\rho) = average( (\phi(r+\rho)-\phi(r))^2) )
-            
-        Returns
-        -------
-        stf, rho: tuple of `numpy.array`
-            First element contains the structure function in nm**2
-            Second elements contains the separation at which the structure function has been computed in m
-        
-        '''
-        seps_px = np.array([1,2,5,10,20,50,100])
-        stf= np.zeros_like(seps_px)
-        for i, sep in enumerate(seps_px) :
-            stf[i] = self._structure_function_sep(sep, a_moment)
-        return stf, seps_px
-
-
-    def plot_spectrum(self, separation_in_meter=2, **kwargs):
-        dres_nm = self.difference_across_spider_at(separation_in_meter, **kwargs)
-        dres_sp, dres_fr = self._rfft(dres_nm, self._dt)
-        plt.loglog(dres_fr, dres_sp, label='AO residual difference')
-        plt.ylabel(r'Power spectrum of $D_{\phi}$ of AO residuals at 2m [AU]')
-        plt.xlabel('Frequency [Hz]')
-        plt.grid(True)
-        
-        
-    def plot_structure_function(self):
-        stf_rad2_0, stf_x = self.structure_function(a_moment=0)
-        stf_rad2_1, stf_x = self.structure_function(a_moment=500)
-        plt.figure()
-        plt.semilogy(stf_x * self._pxscale, stf_rad2_0, label='t=0s')
-        plt.semilogy(stf_x * self._pxscale, stf_rad2_1, label='t=1s')
-        plt.xlabel(r'separation $\rho$  [m]')
-        plt.ylabel(r'$D_{\phi}$ of residual phase $[nm^2]$')
-        plt.grid(True)
-        plt.legend()
-        return stf_rad2_0, stf_rad2_1, stf_x
 
 
 class Demodulation():

@@ -74,7 +74,7 @@ class Petalometer():
     def sense_wavefront_jumps(self):
         self._i4.acquire()
         self._i4.display_interferogram()
-        self._compute_jumps()
+        self._compute_jumps_of_interferogram()
         return self.error_jumps
 
     def advance_step_idx(self):
@@ -124,21 +124,24 @@ class Petalometer():
         '''
         return self._jumps
 
-    def _compute_jumps(self):
+    def _compute_jumps_of_interferogram(self):
         r = self._model1.pupil_rotation_angle
         image = self._i4.interferogram()
+        self._jumps = self.compute_jumps(image, r)
+
+    @classmethod
+    def compute_jumps(cls, image, r):
         angs = (90, 90 - r, 30, 30 - r, -30, -30 - r, -
                 90, -90 - r, -150, -150 - r, -210, -210 - r, -270)
         res = np.zeros(len(angs) - 1)
         for i in range(len(angs) - 1):
-            ifm = self._mask_ifgram(image, (angs[i + 1], angs[i]))
+            ifm = cls._mask_ifgram(image, (angs[i + 1], angs[i]))
             res[i] = np.ma.median(ifm)
+        #res = wrap_around_zero(res * u.nm, self.wavelength)
+        return res * u.nm
 
-        #self._jumps = wrap_around_zero(
-        #    res * u.nm, self.wavelength)
-        self._jumps = res * u.nm
-
-    def _mask_ifgram(self, ifgram, angle_range):
+    @classmethod
+    def _mask_ifgram(cls, ifgram, angle_range):
         smask1 = sector_mask(ifgram.shape,
                              (angle_range[0], angle_range[1]))
         mask = np.ma.mask_or(ifgram.mask, ~smask1)
