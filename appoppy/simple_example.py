@@ -131,7 +131,7 @@ class FocalPlaneWFSExample(object):
         image = aa.intensity
         title = aa.location
         if row is None:
-            row = np.int(image.shape[0] / 2)
+            row = int(image.shape[0] / 2)
 
         if scale == 'linear':
             plt.plot(image[row, :])

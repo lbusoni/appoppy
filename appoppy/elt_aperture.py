@@ -3,26 +3,44 @@ from astropy.io import fits
 from poppy.poppy_core import PlaneType
 import os
 from appoppy.package_data import data_root_dir
+from scipy.ndimage import rotate
 
 
-def restore_elt_pupil_mask():
+PUPIL_MASK_480 = 'EELT480pp0.0813spider.fits'
+PUPIL_MASK_512 = 'EELT512pp0.0762nogapRoundObs.fits'
+
+
+def restore_elt_pupil_mask(pupil_mask_tag):
+
     fname = os.path.join(data_root_dir(),
                          'pupilstop',
-                         'EELT480pp0.0813spider.fits')
+                         pupil_mask_tag)
     mask = fits.getdata(fname)
     maskb = (mask == False)
-    # it shoud be read from params.txt MAIN PIXEL_PITCH
-    pixel_pitch = 0.08215
+    maski = maskb.astype(int)
+    # it should be read from params.txt MAIN PIXEL_PITCH
+    if pupil_mask_tag == PUPIL_MASK_480:
+        pixel_pitch = 0.08215
+        rotation = 0
+    elif pupil_mask_tag == PUPIL_MASK_512:
+        pixel_pitch = 0.076171875
+        rotation = 15
+    else:
+        raise ValueError('Unknown pupilstop %s' % pupil_mask_tag)
     hdr = fits.Header()
     hdr['PIXELSCL'] = pixel_pitch
-    hdu = fits.PrimaryHDU(data=maskb.astype(int), header=hdr)
+    hdr['ROTATION'] = rotation
+
+    mask = rotate(maski, rotation, reshape=False,
+                  cval=1, mode='constant')
+    hdu = fits.PrimaryHDU(data=mask, header=hdr)
     return hdu
 
 
-def ELTAperture():
+def ELTAperture(pupil_mask_tag=PUPIL_MASK_480):
     def _invert_int_mask(mask):
         return -mask + 1
-    hdumask = restore_elt_pupil_mask()
+    hdumask = restore_elt_pupil_mask(pupil_mask_tag)
     hdumask.data = _invert_int_mask(hdumask.data)
     return poppy.FITSOpticalElement(
         transmission=fits.HDUList([hdumask]),

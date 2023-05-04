@@ -6,20 +6,23 @@ from appoppy.package_data import data_root_dir
 from appoppy.elt_aperture import restore_elt_pupil_mask
 from astropy.io import fits
 import astropy.units as u
+from appoppy import elt_aperture
+from scipy.ndimage import rotate
 
 
 def convert_residual_wavefront():
 
     fname_sav = os.path.join(data_root_dir(),
                              '20210518_223459.0',
-                             'CUBE_OLCUBE_CL_coo0.0_0.0.sav')
+                             'CUBE_CL_coo0.0_0.0.sav')
+
     fname_fits = os.path.join(data_root_dir(),
                               '20210518_223459.0',
-                              'CUBE_OLCUBE_CL_coo0.0_0.0.fits')
+                              'CUBE_CL_coo0.0_0.0_converted.fits')
 
     idl_dict = scipy.io.readsav(fname_sav)
     phase_screen = np.moveaxis(idl_dict['cube_k'], 2, 0)
-    maskhdu = restore_elt_pupil_mask()
+    maskhdu = restore_elt_pupil_mask(elt_aperture.PUPIL_MASK_480)
     mask = maskhdu.data
     maskhdr = maskhdu.header
     cmask = np.tile(mask, (phase_screen.shape[0], 1, 1))
@@ -34,11 +37,48 @@ def convert_residual_wavefront():
     fits.append(fname_fits, mask.astype(int))
 
 
-def restore_residual_wavefront():
+def convert_hires_wavefront(tracking_number):
+
+    fname_orig_fits = os.path.join(data_root_dir(),
+                                   tracking_number,
+                                   'CUBE_CL_coo0.0_0.0.fits')
 
     fname_fits = os.path.join(data_root_dir(),
-                              '20210518_223459.0',
-                              'CUBE_OLCUBE_CL_coo0.0_0.0.fits')
+                              tracking_number,
+                              'CUBE_CL_coo0.0_0.0_converted.fits')
+
+    pupilmasktag = elt_aperture.PUPIL_MASK_512
+    dat, hdr = fits.getdata(fname_orig_fits, 0, header=True)
+    maskhdu = restore_elt_pupil_mask(pupilmasktag)
+    maskhdr = maskhdu.header
+    mask = maskhdu.data
+    rotation = float(maskhdr['ROTATION'])
+
+    phase_screen = rotate(
+        dat[:, :, 0:150], rotation, reshape=False, cval=0,
+        mode='constant', axes=(1, 0))
+
+    phase_screen = np.moveaxis(phase_screen, -1, 0)
+
+    cmask = np.tile(mask, (phase_screen.shape[0], 1, 1))
+    res_wfs = np.ma.masked_array(phase_screen, mask=cmask)
+
+    header = fits.Header()
+    header['TN'] = hdr['TN']
+    header['COO_RO'] = float(hdr['POCOO0'])
+    header['COO_TH'] = float(hdr['POCOO1'])
+    header['PIXELSCL'] = maskhdr['PIXELSCL']
+    header['PUPILTAG'] = pupilmasktag
+    fits.writeto(fname_fits, res_wfs.data, header)
+    fits.append(fname_fits, mask.astype(int))
+
+
+def restore_residual_wavefront(tracking_number):
+    #  '20210518_223459.0'
+
+    fname_fits = os.path.join(data_root_dir(),
+                              tracking_number,
+                              'CUBE_CL_coo0.0_0.0_converted.fits')
     dat, hdr = fits.getdata(fname_fits, 0, header=True)
     mas = fits.getdata(fname_fits, 1).astype(bool)
     cmask = np.tile(mas, (dat.shape[0], 1, 1))
@@ -53,8 +93,17 @@ class MaoryResidualWavefront(ArrayOpticalElement):
     Data consists of 1375 frames sampled at 500Hz of residual wavefront on-axis
     in median conditions
 
+    Selected data are available in the shared gdrive
+    "MORFEO-OAA/Petalometro Ciao Ciao/Simulazioni PASSATA" where a README.gdoc
+    explains the simulated configuration.
+    The user must copy the corresponding folder (e.g. 20210518_223459.0)
+    in appoppy/data and pip install again to copy the data in the proper folder.
+
+
     Parameters
     ----------
+    tracking_number: string
+        tracking number of the PASSATA simulation
     start_from: int (optional, default=100)
         first frame to use
     step: int (optional, default=0)
@@ -72,13 +121,15 @@ class MaoryResidualWavefront(ArrayOpticalElement):
     '''
     _START_FROM = 100
 
-    def __init__(self, 
-                 start_from=None, 
-                 step=0, 
+    def __init__(self,
+                 tracking_number,
+                 start_from=None,
+                 step=0,
                  average_on=1,
                  **kwargs):
-        self._res_wf, hdr = restore_residual_wavefront()
+        self._res_wf, hdr = restore_residual_wavefront(tracking_number)
         self._pxscale = hdr['PIXELSCL'] * u.m / u.pixel
+        self._pupiltag = hdr['PUPILTAG']
         self._nframes = self._res_wf.shape[0]
 
         if start_from is None:
@@ -92,6 +143,14 @@ class MaoryResidualWavefront(ArrayOpticalElement):
         self.amplitude = (~self._res_wf[self._START_FROM].mask).astype(int)
         super(MaoryResidualWavefront, self).__init__(
             transmission=self.amplitude, pixelscale=self._pxscale, **kwargs)
+
+    @property
+    def pupiltag(self):
+        return self._pupiltag
+
+    @property
+    def shape(self):
+        return self._res_wf.shape
 
     def set_step_idx(self, step_idx):
         self._step_idx = step_idx
