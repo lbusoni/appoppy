@@ -55,7 +55,7 @@ def convert_hires_wavefront(tracking_number):
     rotation = float(maskhdr['ROTATION'])
 
     phase_screen = rotate(
-        dat[:, :, 0:150], rotation, reshape=False, cval=0,
+        dat, rotation, reshape=False, cval=0,
         mode='constant', axes=(1, 0))
 
     phase_screen = np.moveaxis(phase_screen, -1, 0)
