@@ -74,7 +74,8 @@ class AOResidual():
         -------
         stf, rho: tuple of `numpy.array`
             First element contains the structure function in nm**2
-            Second elements contains the separation at which the structure function has been computed in m
+            Second elements contains the separation at which the
+            structure function has been computed in m
 
         '''
         seps_px = np.array([1, 2, 5, 10, 20, 50, 100])

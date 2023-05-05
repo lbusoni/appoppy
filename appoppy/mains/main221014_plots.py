@@ -263,6 +263,65 @@ class SeriesOfInterferogram():
         return self.phase_screen_ave - self.petals_from_res_map_ave()
 
 
+class GifAnimator():
+    # TODO: move it on arte
+    '''
+    Create jpeg and animated gif from a 3D array
+
+    The first axis of the array is the time dimension
+
+
+    Parameters
+    ----------
+
+    root_folder: string
+        the root folder where jpeg and gif will be saved
+
+    cube_map: ndarray
+        maps to be animated. Axis 0 is time
+
+    deltat: float
+        time interval between maps in millisec
+    '''
+
+    def __init__(self, root_folder, cube_map, deltat):
+        self._jpg_root = root_folder
+        self._cube_map = cube_map
+        self._n_iter = cube_map.shape[0]
+        self._dt = deltat
+        Path(self._jpg_root).mkdir(parents=True, exist_ok=False)
+
+    def _animate(self, step=1, **kwargs):
+        plt.close('all')
+        for i in range(0, self._n_iter, step):
+            self.display_map(i, title='t=%4d ms' % (i * self._dt), **kwargs)
+            plt.savefig(self._file_name(i))
+            plt.close('all')
+
+    def display_map(self, idx, title='', vmin=None, vmax=None, cmap='twilight'):
+        plt.clf()
+        norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
+        plt.imshow(self._cube_map[idx],
+                   origin='lower',
+                   norm=norm,
+                   extent=[-19.5, 19.5, -19.5, 19.5],
+                   cmap=cmap)
+        plt.colorbar()
+        plt.title(title)
+        plt.show()
+
+    def _file_name(self, idx):
+        return os.path.join(self._jpg_root, '%04d.jpeg' % idx)
+
+    def make_gif(self, step=10, **kwargs):
+        self._animate(step, **kwargs)
+        outputfname = os.path.join(self._jpg_root, 'map.gif')
+        with imageio.get_writer(outputfname, mode='I') as writer:
+            for i in range(0, self._n_iter, step):
+                image = imageio.imread(self._file_name(i))
+                writer.append_data(image)
+
+
 def petal_estimate_55():
     soi = SeriesOfInterferogram.load(
         '/Users/lbusoni/Downloads/anim/soi55.fits')
