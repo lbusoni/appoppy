@@ -9,6 +9,7 @@ from astropy.io.fits.header import Header
 import imageio
 import os
 from appoppy.ao_residuals import AOResidual
+from pathlib import Path
 
 
 def main_plot_pupil():
@@ -84,13 +85,16 @@ def no_turbolence():
     np.round(pet.error_petals)
 
 
+#os.path.join('/Users', 'lbusoni', 'Downloads', 'anim')
 class SeriesOfInterferogram():
 
-    def __init__(self, rot_angle=10):
+    def __init__(self, rot_angle=10, jpeg_root_folder=None):
         self._niter = 1000
         self._rot_angle = rot_angle
-        self._jpg_root = os.path.join(
-            '/Users', 'lbusoni', 'Downloads', 'anim')
+        if jpeg_root_folder is None:
+            home = str(Path.home())
+            jpeg_root_folder = os.path.join(home, 'appoppy_anim')
+        self._jpg_root = jpeg_root_folder
         self._res_map_cumave = None
         self._res_map = None
         self._meas_petals = None
