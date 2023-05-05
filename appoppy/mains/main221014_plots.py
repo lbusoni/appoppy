@@ -12,12 +12,17 @@ from appoppy.ao_residuals import AOResidual
 
 
 def main_plot_pupil():
-    pet = Petalometer(r0=99999, petals=np.zeros(6) * u.nm, rotation_angle=20)
+    pet = Petalometer(use_simulated_residual_wfe=False,
+                      r0=99999,
+                      petals=np.zeros(6) * u.nm,
+                      rotation_angle=20)
     pet._i4.display_pupil_intensity()
     pet._model1.display_pupil_intensity()
     pet._model2.display_pupil_intensity()
 
-    pet = Petalometer(r0=99999, petals=np.zeros(6) * u.nm,
+    pet = Petalometer(use_simulated_residual_wfe=False,
+                      r0=99999,
+                      petals=np.zeros(6) * u.nm,
                       rotation_angle=20,
                       zernike=np.array([0, 0, 10]) * u.um)
     plt.clf()
@@ -33,7 +38,8 @@ def main_plot_pupil():
 
 def opd_turbolenza_kolmo():
     m2 = EltForPetalometry(
-        r0=0.26, npix=240, kolm_seed=np.random.randint(2147483647))
+        use_simulated_residual_wfe=False,
+        r0=0.26, kolm_seed=np.random.randint(2147483647))
     osys = m2._osys
     kopd = osys.planes[0].get_opd(osys.input_wavefront(2.2e-6 * u.m))
     kopdm = np.ma.MaskedArray(kopd, mask=m2.pupil_mask())
@@ -41,8 +47,10 @@ def opd_turbolenza_kolmo():
 
 
 def opd_turbolenza_residui_MCAO(start_from=0):
-    m2 = EltForPetalometry(r0=np.inf, npix=480,
-                           residual_wavefront_start_from=start_from)
+    m2 = EltForPetalometry(
+        use_simulated_residual_wfe=True,
+        tracking_number='20210518_223459.0',
+        residual_wavefront_start_from=start_from)
     osys = m2._osys
     kopd = osys.planes[0].get_opd(osys.input_wavefront(2.2e-6 * u.m))
     kopdm = np.ma.MaskedArray(kopd, mask=m2.pupil_mask())
@@ -52,7 +60,8 @@ def opd_turbolenza_residui_MCAO(start_from=0):
 
 
 def phase_shift():
-    pet = Petalometer(r0=99999,
+    pet = Petalometer(use_simulated_residual_wfe=False,
+                      r0=99999,
                       petals=np.array([0, 200, -400, 600, -800, 1000]) * u.nm,
                       rotation_angle=20,
                       zernike=np.array([0, 10000, -5000, 3000, 400, 500, 600, -200, 100]) * u.nm)
@@ -63,7 +72,8 @@ def phase_shift():
 
 
 def no_turbolence():
-    pet = Petalometer(r0=99999,
+    pet = Petalometer(use_simulated_residual_wfe=False,
+                      r0=99999,
                       petals=np.array([0, 100, -200, 300, -400, 500]) * u.nm,
                       rotation_angle=20)
 
@@ -89,7 +99,8 @@ class SeriesOfInterferogram():
         self._aores = AOResidual()
 
     def run(self):
-        self._pet = Petalometer(r0=np.inf,
+        self._pet = Petalometer(use_simulated_residual_wfe=True,
+                                tracking_number='20210518_223459.0',
                                 petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                                 rotation_angle=self._rot_angle)
         self._res_map = np.ma.zeros((self._niter, 480, 480))
@@ -237,6 +248,7 @@ class SeriesOfInterferogram():
         pp = pp - pp.mean()
         #pp=np.array([168., 275., 339., 177., 156.,  93.])*u.nm
         pet = Petalometer(
+            use_simulated_residual_wfe=False,
             r0=999999,
             petals=pp,
             rotation_angle=self._rot_angle)

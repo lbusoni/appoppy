@@ -20,9 +20,10 @@ def convert_residual_wavefront():
                               '20210518_223459.0',
                               'CUBE_CL_coo0.0_0.0_converted.fits')
 
+    pupilmasktag = elt_aperture.PUPIL_MASK_480
     idl_dict = scipy.io.readsav(fname_sav)
     phase_screen = np.moveaxis(idl_dict['cube_k'], 2, 0)
-    maskhdu = restore_elt_pupil_mask(elt_aperture.PUPIL_MASK_480)
+    maskhdu = restore_elt_pupil_mask(pupilmasktag)
     mask = maskhdu.data
     maskhdr = maskhdu.header
     cmask = np.tile(mask, (phase_screen.shape[0], 1, 1))
@@ -33,6 +34,7 @@ def convert_residual_wavefront():
     header['COO_RO'] = float(idl_dict['polar_coordinates_k'][0])
     header['COO_TH'] = float(idl_dict['polar_coordinates_k'][1])
     header['PIXELSCL'] = maskhdr['PIXELSCL']
+    header['PUPILTAG'] = pupilmasktag
     fits.writeto(fname_fits, res_wfs.data, header)
     fits.append(fname_fits, mask.astype(int))
 

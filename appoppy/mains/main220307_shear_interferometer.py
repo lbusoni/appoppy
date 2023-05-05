@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import astropy.units as u
 import numpy as np
 from appoppy.petalometer import Petalometer
@@ -7,24 +6,34 @@ from appoppy.elt_aperture import ELTAperture
 from appoppy.maory_residual_wfe import MaoryResidualWavefront
 
 
-def main(r0=np.inf,
+def main(use_simulated_residual_wfe=True,
+         r0=999999,
+         tracking_number='20210518_223459.0',
          petals=np.random.uniform(-1100, 1100, 6) * u.nm,
          rotation_angle=10,
          residual_wavefront_average_on=100):
-    p = Petalometer(r0=r0,
+    p = Petalometer(use_simulated_residual_wfe=use_simulated_residual_wfe,
+                    r0=r0,
+                    tracking_number=tracking_number,
                     petals=petals,
                     rotation_angle=rotation_angle,
                     residual_wavefront_average_on=residual_wavefront_average_on)
     return p
 
 
-def error(r0=np.inf,
+def error(use_simulated_residual_wfe=True,
+          r0=999999,
+          tracking_number='20210518_223459.0',
           petals=np.random.uniform(-1100, 1100, 6) * u.nm,
           rotation_angle=10,
           niter=10):
     res = []
     for i in range(niter):
-        p = Petalometer(r0=r0, petals=petals, rotation_angle=rotation_angle)
+        p = Petalometer(use_simulated_residual_wfe=use_simulated_residual_wfe,
+                        r0=r0,
+                        tracking_number=tracking_number,
+                        petals=petals,
+                        rotation_angle=rotation_angle)
         res.append(p.error_petals)
         print(p.error_petals)
     ret = np.array(res)
@@ -67,7 +76,6 @@ def reload():
 
 
 def test_maory_residuals():
-    npix = 240
     wl = 2.2e-6
     ss = poppy.OpticalSystem(pupil_diameter=40)
     ss.add_pupil(ELTAperture())
@@ -76,7 +84,8 @@ def test_maory_residuals():
     dlmax = (dl / dl.sum())[250, 250]
 
     ss = poppy.OpticalSystem(pupil_diameter=40)
-    ss.add_pupil(MaoryResidualWavefront(start_from=100, average_on=1))
+    ss.add_pupil(MaoryResidualWavefront(
+        '20210518_223459.0', start_from=100, average_on=1))
     ss.add_pupil(ELTAperture())
     ss.add_detector(pixelscale=0.004, fov_arcsec=1.0)
     psfs = []

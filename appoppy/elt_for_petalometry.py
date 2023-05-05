@@ -42,7 +42,7 @@ class EltForPetalometry(object):
             atmo_wfe = poppy.KolmogorovWFE(
                 name='Turbulence',
                 r0=r0l,
-                dz=1,
+                dz=1 * u.m,
                 seed=self._kolm_seed)
             npix = 480
             elt_aperture = ELTAperture()

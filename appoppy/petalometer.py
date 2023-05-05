@@ -10,7 +10,9 @@ import logging
 class Petalometer():
 
     def __init__(self,
-                 r0=np.inf,
+                 use_simulated_residual_wfe=True,
+                 r0=999999,
+                 tracking_number='20210518_223459.0',
                  residual_wavefront_average_on=1,
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  rotation_angle=15,
@@ -18,7 +20,7 @@ class Petalometer():
                  seed=None):
         if seed is None:
             seed = np.random.randint(2147483647)
-        #if residual_wavefront_index:
+        # if residual_wavefront_index:
         #    residual_wavefront_index = np.random.randint(100, 1000)
 
         self._log = logging.getLogger('appoppy')
@@ -26,7 +28,9 @@ class Petalometer():
         self._res_average_on = residual_wavefront_average_on
 
         self._model1 = EltForPetalometry(
+            use_simulated_residual_wfe=use_simulated_residual_wfe,
             r0=r0,
+            tracking_number=tracking_number,
             kolm_seed=seed,
             rotation_angle=rotation_angle,
             residual_wavefront_average_on=residual_wavefront_average_on,
@@ -34,8 +38,11 @@ class Petalometer():
             name='M1')
 
         self._model2 = EltForPetalometry(
+            use_simulated_residual_wfe=use_simulated_residual_wfe,
             r0=r0,
+            tracking_number=tracking_number,
             kolm_seed=seed,
+            rotation_angle=0,
             residual_wavefront_average_on=residual_wavefront_average_on,
             residual_wavefront_step=0,
             name='M2')
@@ -70,7 +77,6 @@ class Petalometer():
     def petals(self):
         return self._petals.to(u.nm)
 
-
     def sense_wavefront_jumps(self):
         self._i4.acquire()
         self._i4.display_interferogram()
@@ -89,21 +95,22 @@ class Petalometer():
     @property
     def _expected_jumps(self):
         dd = np.repeat(self.petals, 2)
-        #return wrap_around_zero(np.roll(dd, 1) - dd,
+        # return wrap_around_zero(np.roll(dd, 1) - dd,
         #                        self.wavelength)
         return np.roll(dd, 1) - dd
 
     @property
     def error_jumps(self):
-        #return wrap_around_zero(
+        # return wrap_around_zero(
         #    (self._expected_jumps() - self._jumps).to(u.nm),
         #    self.wavelength)
         return (self._expected_jumps - self.all_jumps).to(u.nm)
 
     @property
     def error_petals(self):
-        #return difference(self.estimated_petals, self.petals, self.wavelength)
-        diff =  self.estimated_petals - self.petals
+        # return difference(self.estimated_petals, self.petals,
+        # self.wavelength)
+        diff = self.estimated_petals - self.petals
         return diff - diff[0]
 
     @property
@@ -117,7 +124,7 @@ class Petalometer():
     def all_jumps(self):
         '''
         Measured OPD between all sectors.
-        
+
         Even-th jumps correspond to the interference of a segment with itself, so
         they should be nominally zero.
         Odd-th jumps correspond to OPD across islands, what we are interested in. 
@@ -170,5 +177,5 @@ class Petalometer():
     @property
     def estimated_petals(self):
         res = -1 * np.cumsum(self.across_islands_jumps)
-        #return zero_mean(res, self.wavelength)
+        # return zero_mean(res, self.wavelength)
         return res
