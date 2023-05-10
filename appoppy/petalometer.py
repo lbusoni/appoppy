@@ -14,6 +14,7 @@ class Petalometer():
                  r0=999999,
                  tracking_number='20210518_223459.0',
                  residual_wavefront_average_on=1,
+                 residual_wavefront_start_from=100,
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  rotation_angle=15,
                  zernike=[0, 0],
@@ -34,6 +35,7 @@ class Petalometer():
             tracking_number=tracking_number,
             kolm_seed=seed,
             rotation_angle=rotation_angle,
+            residual_wavefront_start_from=residual_wavefront_start_from,
             residual_wavefront_average_on=residual_wavefront_average_on,
             residual_wavefront_step=0,
             name='M1')
@@ -44,6 +46,7 @@ class Petalometer():
             tracking_number=tracking_number,
             kolm_seed=seed,
             rotation_angle=0,
+            residual_wavefront_start_from=residual_wavefront_start_from,
             residual_wavefront_average_on=residual_wavefront_average_on,
             residual_wavefront_step=0,
             name='M2')

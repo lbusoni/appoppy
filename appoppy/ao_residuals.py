@@ -6,10 +6,13 @@ from appoppy.mask import sector_mask
 
 class AOResidual():
 
-    def __init__(self, tracking_number):
+    def __init__(self,
+                 tracking_number,
+                 start_from=100):
+        self._start_from = start_from
         resscreen, hdr = restore_residual_wavefront(tracking_number)
         self._pxscale = float(hdr['PIXELSCL'])
-        self._screens = resscreen
+        self._screens = resscreen[self._start_from:, :, :]
         self._shape = self._screens.shape
         self._spider_x_coord = 240
         self._valid_y_min = 20
