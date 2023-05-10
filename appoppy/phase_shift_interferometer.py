@@ -10,8 +10,13 @@ import logging
 
 class PhaseShiftInterferometer():
     '''
-    Returns an Optical System whose input wavefront is equal to the sum of
+    Returns an Optical System mimicking a phase shift interferometer
+
+    The system is fed with an input wavefront equal to the sum of
     the wavefront in the exit pupils of the two given optical systems.
+
+    The system has the capability of measuring an interferogram using
+    phase shift technique
 
 
     Parameters
@@ -57,6 +62,25 @@ class PhaseShiftInterferometer():
         return self._propagate()
 
     def acquire(self):
+        '''
+        Acquire an interferogram with a 4 step phase shift
+
+        Let's define the interferogram intensity dependence on the phase x as
+        I = A + B cos(x)
+
+        The routine performs 4 exposures acting on the phase shift of os1
+        to estimate
+        I0 = A + B cos(x)
+        I1 = A + B cos(x+pi/2) = A - B sin(x)
+        I2 = A + B cos(x+pi) = A - B cos(x)
+        I3 = A + B cos(x+3pi/2) = A - B sin(x)
+
+        The wrapped phase map is then computed as arctan(I3-I1/I0-I2)
+        The maps of amplitude B, offset A and visibility (B/A) are also
+        estimated
+
+        The resulting phase map is bounded in the domain (-pi,pi)
+        '''
         self._log.info('phase shift acquisition')
         self._wf_0 = self._phase_shift_step(0)
         self._wf_1 = self._phase_shift_step(0.25)
@@ -65,11 +89,33 @@ class PhaseShiftInterferometer():
         bsin = self._wf_3.intensity - self._wf_1.intensity
         bcos = self._wf_0.intensity - self._wf_2.intensity
         self._ps = np.arctan2(bsin, bcos)
-        b = np.sqrt((bsin**2 + bcos**2) / 4)
-        a = 0.25 * (self._wf_0.intensity + self._wf_1.intensity +
-                    self._wf_2.intensity + self._wf_3.intensity)
-        self._visibility = b / a
+        self._b_map = np.sqrt((bsin**2 + bcos**2) / 4)
+        self._a_map = 0.25 * (self._wf_0.intensity + self._wf_1.intensity +
+                              self._wf_2.intensity + self._wf_3.intensity)
+        self._visibility = self._b_map / self._a_map
         self._os1.set_phase_shift(0)
+
+    def acquire_without_phase_shift(self, A, B):
+        '''
+        Acquire a phase map without phase shift.
+
+        The amplitude must be estimated/calibrated before
+
+        Let's define the interferogram intensity dependence on the phase x as
+        I = A + B cos(x)
+
+        The routine performs a single exposures to estimate
+        x = arccos( (I-A)/B )
+
+        The maps of amplitude B and offset A must have been estimated/
+        calibrated before
+
+        The resulting phase map is bounded in the domain (0,pi)
+        '''
+        self._log.info('acquisition without phase shift')
+        self._wf_0 = self._phase_shift_step(0)
+        self._ps = np.arccos((self._wf_0.intensity - A) / B)
+        self._visibility = B / A
 
     def visibility(self):
         return self._visibility

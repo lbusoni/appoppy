@@ -17,3 +17,4 @@ def main_load():
     filename = os.path.join(
         str(Path.home()), 'appoppy', tracking_number, 'lep.fits')
     lep = LongExposurePetalometer.load(filename)
+    return lep

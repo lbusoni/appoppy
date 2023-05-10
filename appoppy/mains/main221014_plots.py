@@ -3,6 +3,7 @@ import numpy as np
 from astropy import units as u
 import matplotlib.pyplot as plt
 from appoppy.elt_for_petalometry import EltForPetalometry
+from appoppy.long_exposure import LongExposurePetalometer
 
 
 def main_plot_pupil():

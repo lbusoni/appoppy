@@ -11,6 +11,7 @@ from appoppy.mask import mask_from_median
 from appoppy.elt_aperture import ELTAperture
 import logging
 from appoppy.maory_residual_wfe import MaoryResidualWavefront
+from appoppy.low_wind_effect import LowWindEffectWavefront
 
 
 class EltForPetalometry(object):
@@ -36,6 +37,7 @@ class EltForPetalometry(object):
         self._kolm_seed = kolm_seed
         self.pupil_rotation_angle = rotation_angle
         self._use_sim_res = use_simulated_residual_wfe
+        self._lwe_wind_speed = 0.5
 
         if not self._use_sim_res:
             r0l = r0 * u.m * (self.wavelength / (0.5e-6 * u.m))**(6 / 5)
@@ -65,6 +67,7 @@ class EltForPetalometry(object):
             npix=npix,
             pupil_diameter=2 * self.telescope_radius)
         self._osys.add_pupil(atmo_wfe)
+        self._osys.add_pupil(LowWindEffectWavefront(self._lwe_wind_speed))
         self._osys.add_pupil(poppy.ZernikeWFE(name='Zernike WFE',
                                               coefficients=zern_coeff,
                                               radius=self.telescope_radius))
@@ -82,8 +85,9 @@ class EltForPetalometry(object):
             fov_arcsec=1)
 
         self._turbulence_plane = 0
-        self._zernike_wavefront_plane = 1
-        self._m4_wavefront_plane = 2
+        self._lwe_plane = 1
+        self._zernike_wavefront_plane = 2
+        self._m4_wavefront_plane = 3
         self._phase_shift_plane = -4
         self._exit_pupil_plane = -2
         self.display_intermediates = False
@@ -179,12 +183,15 @@ class EltForPetalometry(object):
         osys = self._osys
         opd0 = osys.planes[self._turbulence_plane].get_opd(
             osys.input_wavefront(self.wavelength))
-        opd1 = osys.planes[self._zernike_wavefront_plane].get_opd(
+        opd1 = osys.planes[self._lwe_plane].get_opd(
             osys.input_wavefront(self.wavelength))
-        opd2 = osys.planes[self._m4_wavefront_plane].get_opd(
+        opd2 = osys.planes[self._zernike_wavefront_plane].get_opd(
+            osys.input_wavefront(self.wavelength))
+        opd3 = osys.planes[self._m4_wavefront_plane].get_opd(
             osys.input_wavefront(self.wavelength))
 
-        opdm = np.ma.MaskedArray(opd0 + opd1 + opd2, mask=self.pupil_mask())
+        opdm = np.ma.MaskedArray(
+            opd0 + opd1 + opd2 + opd3, mask=self.pupil_mask())
         return opdm * 1e9
 
     def _display_on_plane(self, what, plane_number, scale='linear'):
