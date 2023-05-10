@@ -6,14 +6,15 @@ from appoppy.mask import sector_mask
 
 class AOResidual():
 
-    def __init__(self, tracking_number='20210518_223459.0'):
+    def __init__(self, tracking_number):
         resscreen, hdr = restore_residual_wavefront(tracking_number)
         self._pxscale = float(hdr['PIXELSCL'])
         self._screens = resscreen
+        self._shape = self._screens.shape
         self._spider_x_coord = 240
         self._valid_y_min = 20
         self._valid_y_max = 160
-        self._dt = 0.002
+        self._dt = hdr['TIME_STEP']
         self._t_steps = self._screens.shape[0]
         self._t = np.arange(0, self._t_steps * self._dt, self._dt)
 
@@ -22,6 +23,10 @@ class AOResidual():
         self._phase_screens_no_global_pist = None
         self._petals_median = None
         self._spider_jumps = None
+
+    @property
+    def time_step(self):
+        return self._dt
 
     def difference_across_spider_at(self, separation_in_meter, rows=None):
         raise Exception("Fix it - it assumes a 480 px pupil")
@@ -115,7 +120,8 @@ class AOResidual():
         if self._phase_screens_no_global_pist is None:
             dd = self._screens.mean(axis=(1, 2))
             self._phase_screens_no_global_pist = self._screens - \
-                np.rollaxis(np.tile(dd, (480, 480, 1)), 2)
+                np.rollaxis(
+                    np.tile(dd, (self._shape[1], self._shape[2], 1)), 2)
         return self._phase_screens_no_global_pist
 
     @property

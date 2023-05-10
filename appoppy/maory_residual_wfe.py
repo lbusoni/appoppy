@@ -35,6 +35,7 @@ def convert_residual_wavefront():
     header['COO_TH'] = float(idl_dict['polar_coordinates_k'][1])
     header['PIXELSCL'] = maskhdr['PIXELSCL']
     header['PUPILTAG'] = pupilmasktag
+    header['TIME_STEP'] = 0.002
     fits.writeto(fname_fits, res_wfs.data, header)
     fits.append(fname_fits, mask.astype(int))
 
@@ -71,6 +72,7 @@ def convert_hires_wavefront(tracking_number):
     header['COO_TH'] = float(hdr['POCOO1'])
     header['PIXELSCL'] = maskhdr['PIXELSCL']
     header['PUPILTAG'] = pupilmasktag
+    header['TIME_STEP'] = 0.001
     fits.writeto(fname_fits, res_wfs.data, header)
     fits.append(fname_fits, mask.astype(int))
 
@@ -132,6 +134,7 @@ class MaoryResidualWavefront(ArrayOpticalElement):
         self._res_wf, hdr = restore_residual_wavefront(tracking_number)
         self._pxscale = hdr['PIXELSCL'] * u.m / u.pixel
         self._pupiltag = hdr['PUPILTAG']
+        self._time_step = hdr['TIME_STEP']
         self._nframes = self._res_wf.shape[0]
 
         if start_from is None:
@@ -145,6 +148,10 @@ class MaoryResidualWavefront(ArrayOpticalElement):
         self.amplitude = (~self._res_wf[self._START_FROM].mask).astype(int)
         super(MaoryResidualWavefront, self).__init__(
             transmission=self.amplitude, pixelscale=self._pxscale, **kwargs)
+
+    @property
+    def time_step(self):
+        return self._time_step
 
     @property
     def pupiltag(self):

@@ -78,6 +78,15 @@ class PhaseShiftInterferometer():
         return mask_from_median(self._visibility, 2)
 
     def interferogram(self):
+        '''
+
+        Returns
+        -------
+        opd: numpy array
+            optical path difference between the 2 beams in nm units,
+            bounded in the range (-wavelength/2, wavelength/2)
+        '''
+
         self._wrapped = np.arctan2(np.sin(self._ps), np.cos(self._ps))
         if self._should_unwrap:
             self._unwrapped = skimage.restoration.unwrap_phase(self._wrapped)

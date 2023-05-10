@@ -45,6 +45,7 @@ class EltForPetalometry(object):
                 dz=1 * u.m,
                 seed=self._kolm_seed)
             npix = 480
+            time_step = 60  # each kolmo layer is decorrelated from the previous one
             elt_aperture = ELTAperture()
         else:
             atmo_wfe = MaoryResidualWavefront(
@@ -53,13 +54,16 @@ class EltForPetalometry(object):
                 step=residual_wavefront_step,
                 average_on=residual_wavefront_average_on)
             npix = atmo_wfe.shape[-1]
+            time_step = atmo_wfe.time_step
             elt_aperture = ELTAperture(atmo_wfe.pupiltag)
+
+        self.pixelsize = 2 * self.telescope_radius / npix
+        self.time_step = time_step
 
         self._osys = poppy.OpticalSystem(
             oversample=2,
             npix=npix,
             pupil_diameter=2 * self.telescope_radius)
-
         self._osys.add_pupil(atmo_wfe)
         self._osys.add_pupil(poppy.ZernikeWFE(name='Zernike WFE',
                                               coefficients=zern_coeff,
@@ -88,9 +92,9 @@ class EltForPetalometry(object):
     def _reset_intermediate_wfs(self):
         self._intermediates_wfs = None
 
-    def set_atmospheric_wavefront(self, atmo_opd):
-        self._reset_intermediate_wfs()
-        pass
+    # def set_atmospheric_wavefront(self, atmo_opd):
+    #     self._reset_intermediate_wfs()
+    #     pass
 
     def set_input_wavefront_zernike(self, zern_coeff):
         self._reset_intermediate_wfs()

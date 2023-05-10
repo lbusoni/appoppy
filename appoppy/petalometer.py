@@ -26,6 +26,7 @@ class Petalometer():
         self._log = logging.getLogger('appoppy')
         self._step_idx = 0
         self._res_average_on = residual_wavefront_average_on
+        self._should_display = True
 
         self._model1 = EltForPetalometry(
             use_simulated_residual_wfe=use_simulated_residual_wfe,
@@ -54,9 +55,35 @@ class Petalometer():
         self._i4.combine()
         self.sense_wavefront_jumps()
 
+    def should_display(self, true_or_false):
+        self._should_display = true_or_false
+
     @property
     def wavelength(self):
         return self._model1.wavelength
+
+    @property
+    def pixelsize(self):
+        return self._model1.pixelsize
+
+    @property
+    def phase_difference_map(self):
+        '''
+        Map of phase difference between subapertures overlapped by the
+        rotational shearing.
+
+        The point of polar coordinates (rho, theta) contains the
+        phase difference between the points (rho, theta) and
+        (rho, theta - rotation_angle)
+
+
+        Returns
+        -------
+        phase_map: numpy array
+            last computed phase map in nm, wrapped in
+            the range (-wavelength/2, wavelength/2)
+        '''
+        return self._i4.interferogram()
 
     def set_zernike_wavefront(self, zernike_coefficients_in_m):
         self._model1.set_input_wavefront_zernike(zernike_coefficients_in_m)
@@ -79,7 +106,8 @@ class Petalometer():
 
     def sense_wavefront_jumps(self):
         self._i4.acquire()
-        self._i4.display_interferogram()
+        if self._should_display:
+            self._i4.display_interferogram()
         self._compute_jumps_of_interferogram()
         return self.error_jumps
 
