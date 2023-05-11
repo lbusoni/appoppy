@@ -10,71 +10,82 @@ from appoppy import elt_aperture
 from scipy.ndimage import rotate
 
 
-def convert_residual_wavefront():
+class PASSATASimulationConverter():
+    '''
+    Convert data from PASSATA simulations in the standard used inside
+    "MaoryResidualWavefront" class.
+    '''
+    
+    def __init__(self):
+        pass
 
-    fname_sav = os.path.join(data_root_dir(),
-                             '20210518_223459.0',
-                             'CUBE_CL_coo0.0_0.0.sav')
+    def convert_residual_wavefront(self):
+    
+        fname_sav = os.path.join(data_root_dir(),
+                                 '20210518_223459.0',
+                                 'CUBE_CL_coo0.0_0.0.sav')
+    
+        fname_fits = os.path.join(data_root_dir(),
+                                  '20210518_223459.0',
+                                  'CUBE_CL_coo0.0_0.0_converted.fits')
+    
+        pupilmasktag = elt_aperture.PUPIL_MASK_480
+        idl_dict = scipy.io.readsav(fname_sav)
+        phase_screen = np.moveaxis(idl_dict['cube_k'], 2, 0)
+        maskhdu = restore_elt_pupil_mask(pupilmasktag)
+        mask = maskhdu.data
+        maskhdr = maskhdu.header
+        cmask = np.tile(mask, (phase_screen.shape[0], 1, 1))
+        res_wfs = np.ma.masked_array(phase_screen, mask=cmask)
+        header = fits.Header()
+        header['TN'] = idl_dict['tn'].decode("utf-8")
+        header['DIR'] = idl_dict['dir'].decode("utf-8")
+        header['COO_RO'] = float(idl_dict['polar_coordinates_k'][0])
+        header['COO_TH'] = float(idl_dict['polar_coordinates_k'][1])
+        header['PIXELSCL'] = maskhdr['PIXELSCL']
+        header['PUPILTAG'] = pupilmasktag
+        header['TIME_STEP'] = 0.002
+        fits.writeto(fname_fits, res_wfs.data, header)
+        fits.append(fname_fits, mask.astype(int))
 
-    fname_fits = os.path.join(data_root_dir(),
-                              '20210518_223459.0',
-                              'CUBE_CL_coo0.0_0.0_converted.fits')
+    def convert_hires_wavefront(self, tracking_number):
+        self.convert_from_fits_data(tracking_number,
+                                    elt_aperture.PUPIL_MASK_512,
+                                    0.001)
 
-    pupilmasktag = elt_aperture.PUPIL_MASK_480
-    idl_dict = scipy.io.readsav(fname_sav)
-    phase_screen = np.moveaxis(idl_dict['cube_k'], 2, 0)
-    maskhdu = restore_elt_pupil_mask(pupilmasktag)
-    mask = maskhdu.data
-    maskhdr = maskhdu.header
-    cmask = np.tile(mask, (phase_screen.shape[0], 1, 1))
-    res_wfs = np.ma.masked_array(phase_screen, mask=cmask)
-    header = fits.Header()
-    header['TN'] = idl_dict['tn'].decode("utf-8")
-    header['DIR'] = idl_dict['dir'].decode("utf-8")
-    header['COO_RO'] = float(idl_dict['polar_coordinates_k'][0])
-    header['COO_TH'] = float(idl_dict['polar_coordinates_k'][1])
-    header['PIXELSCL'] = maskhdr['PIXELSCL']
-    header['PUPILTAG'] = pupilmasktag
-    header['TIME_STEP'] = 0.002
-    fits.writeto(fname_fits, res_wfs.data, header)
-    fits.append(fname_fits, mask.astype(int))
-
-
-def convert_hires_wavefront(tracking_number):
-
-    fname_orig_fits = os.path.join(data_root_dir(),
-                                   tracking_number,
-                                   'CUBE_CL_coo0.0_0.0.fits')
-
-    fname_fits = os.path.join(data_root_dir(),
-                              tracking_number,
-                              'CUBE_CL_coo0.0_0.0_converted.fits')
-
-    pupilmasktag = elt_aperture.PUPIL_MASK_512
-    dat, hdr = fits.getdata(fname_orig_fits, 0, header=True)
-    maskhdu = restore_elt_pupil_mask(pupilmasktag)
-    maskhdr = maskhdu.header
-    mask = maskhdu.data
-    rotation = float(maskhdr['ROTATION'])
-
-    phase_screen = rotate(
-        dat, rotation, reshape=False, cval=0,
-        mode='constant', axes=(1, 0))
-
-    phase_screen = np.moveaxis(phase_screen, -1, 0)
-
-    cmask = np.tile(mask, (phase_screen.shape[0], 1, 1))
-    res_wfs = np.ma.masked_array(phase_screen, mask=cmask)
-
-    header = fits.Header()
-    header['TN'] = hdr['TN']
-    header['COO_RO'] = float(hdr['POCOO0'])
-    header['COO_TH'] = float(hdr['POCOO1'])
-    header['PIXELSCL'] = maskhdr['PIXELSCL']
-    header['PUPILTAG'] = pupilmasktag
-    header['TIME_STEP'] = 0.001
-    fits.writeto(fname_fits, res_wfs.data, header)
-    fits.append(fname_fits, mask.astype(int))
+    def convert_from_fits_data(self, tracking_number, rho, theta, pupilmasktag,
+                               timestep):
+        fname_orig_fits = os.path.join(data_root_dir(),
+                                       tracking_number,
+                                       'CUBE_CL_coo%s_%s.fits' % (rho, theta))
+        fname_newdir = os.path.join(data_root_dir(),
+                                  tracking_number + '_%s_%s' % (rho, theta))
+        os.mkdir(fname_newdir)
+        fname_fits = os.path.join(fname_newdir, 'CUBE_CL_converted.fits')
+        dat, hdr = fits.getdata(fname_orig_fits, 0, header=True)
+        maskhdu = restore_elt_pupil_mask(pupilmasktag)
+        maskhdr = maskhdu.header
+        mask = maskhdu.data
+        rotation = float(maskhdr['ROTATION'])
+    
+        phase_screen = rotate(
+            dat, rotation, reshape=False, cval=0,
+            mode='constant', axes=(1, 0))
+    
+        phase_screen = np.moveaxis(phase_screen, -1, 0)
+    
+        cmask = np.tile(mask, (phase_screen.shape[0], 1, 1))
+        res_wfs = np.ma.masked_array(phase_screen, mask=cmask)
+    
+        header = fits.Header()
+        header['TN'] = hdr['TN']
+        header['COO_RO'] = float(hdr['POCOO0'])
+        header['COO_TH'] = float(hdr['POCOO1'])
+        header['PIXELSCL'] = maskhdr['PIXELSCL']
+        header['PUPILTAG'] = pupilmasktag
+        header['TIME_STEP'] = timestep
+        fits.writeto(fname_fits, res_wfs.data, header)
+        fits.append(fname_fits, mask.astype(int))
 
 
 def restore_residual_wavefront(tracking_number):
@@ -82,7 +93,7 @@ def restore_residual_wavefront(tracking_number):
 
     fname_fits = os.path.join(data_root_dir(),
                               tracking_number,
-                              'CUBE_CL_coo0.0_0.0_converted.fits')
+                              'CUBE_CL_converted.fits')
     dat, hdr = fits.getdata(fname_fits, 0, header=True)
     mas = fits.getdata(fname_fits, 1).astype(bool)
     cmask = np.tile(mas, (dat.shape[0], 1, 1))
