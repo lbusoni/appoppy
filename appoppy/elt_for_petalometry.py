@@ -67,7 +67,9 @@ class EltForPetalometry(object):
             npix=npix,
             pupil_diameter=2 * self.telescope_radius)
         self._osys.add_pupil(atmo_wfe)
+        self._osys.add_rotation(30)
         self._osys.add_pupil(LowWindEffectWavefront(self._lwe_wind_speed))
+        self._osys.add_rotation(-30)
         self._osys.add_pupil(poppy.ZernikeWFE(name='Zernike WFE',
                                               coefficients=zern_coeff,
                                               radius=self.telescope_radius))
@@ -85,9 +87,9 @@ class EltForPetalometry(object):
             fov_arcsec=1)
 
         self._turbulence_plane = 0
-        self._lwe_plane = 1
-        self._zernike_wavefront_plane = 2
-        self._m4_wavefront_plane = 3
+        self._lwe_plane = 2
+        self._zernike_wavefront_plane = 4
+        self._m4_wavefront_plane = 5
         self._phase_shift_plane = -4
         self._exit_pupil_plane = -2
         self.display_intermediates = False
