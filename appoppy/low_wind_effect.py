@@ -4,19 +4,23 @@ import matplotlib.pyplot as plt
 import os
 from poppy.poppy_core import ArrayOpticalElement
 import astropy.units as u
+from appoppy.package_data import data_root_dir
 
 
 class LowWindEffectLoader():
 
     def __init__(self, wind_speed):
+        root_folder = os.path.join(data_root_dir(),
+                                   'PowerFLOW_OPD_data_Jul22')
         # Definition of frames and timestamps
-        self._frameTimes = self._readFrameTime('frameTime_definition.txt')
+        self._frameTimes = self._read_frame_time(
+            os.path.join(root_folder, 'frameTime_definition.txt'))
         # Definitions of grid coordinates
-        self._xvals = np.load('xvals.npy') + 0.0125
-        self._yvals = np.load('yvals.npy')
+        self._xvals = np.load(os.path.join(root_folder, 'xvals.npy')) + 0.0125
+        self._yvals = np.load(os.path.join(root_folder, 'yvals.npy'))
 
         # matrix for masking out the structure
-        self._probeDef = np.load('probeDef_npf.npy')
+        self._probeDef = np.load(os.path.join(root_folder, 'probeDef_npf.npy'))
         self._mask = (self._probeDef == 0).astype(bool)
         self.wind_speed = wind_speed
 
@@ -24,10 +28,10 @@ class LowWindEffectLoader():
         self.pixelscale = 0.035
 
         if wind_speed == 0.5:
-            fname = 'allFramesOPD_0p5mps.npy'
+            fname = os.path.join(root_folder, 'allFramesOPD_0p5mps.npy')
             scaling_factor = 2.7
         elif wind_speed == 1.0:
-            fname = 'allFramesOPD_1p0mps.npy'
+            fname = os.path.join(root_folder, 'allFramesOPD_1p0mps.npy')
             scaling_factor = 1.74
         else:
             raise ValueError('Unsupported wind speed value %g' % wind_speed)
@@ -49,7 +53,7 @@ class LowWindEffectLoader():
     def mask(self):
         return self._mask
 
-    def _readFrameTime(self, fname):
+    def _read_frame_time(self, fname):
         f = open(fname)
         ls = f.readlines()
         f.close()
@@ -59,7 +63,7 @@ class LowWindEffectLoader():
             data[int(ld[0])] = float(ld[1])
         return data
 
-    def plotAvgSlice(self, opd, jpg_dir='./', title='', rms=False, vmax=5):
+    def plot_slice(self, opd, title='', vmax=5):
 
         fig, ax = plt.subplots(figsize=(9, 8))
 
@@ -81,18 +85,12 @@ class LowWindEffectLoader():
         clb = plt.colorbar(pad=0.05, fraction=0.02)
         clb.set_label('OPD [μm]', labelpad=-40, y=1.1, rotation=0)
 
-        #ax.text(0.05, 1.025, 'Time = %0.2f [s]' %time, transform=ax.transAxes)
         ax.text(0.35, 1.025, title, transform=ax.transAxes)
         ax.set_xlabel('y [m]')
         ax.set_ylabel('x [m]')
         plt.tight_layout()
 
-        if False:
-            fname = os.path.join(jpg_dir, 'fig_avgFrame.png')
-            plt.savefig(fname, dpi=600)
-            plt.close()
-        else:
-            plt.show()
+        plt.show()
 
 
 class LowWindEffectWavefront(ArrayOpticalElement):
@@ -106,8 +104,12 @@ class LowWindEffectWavefront(ArrayOpticalElement):
     Selected data are available in the shared gdrive
     "MORFEO-OAA/Petalometro Ciao Ciao/PowerFLOW OPD".
 
-    The user must copy the package from gdrive
-    in appoppy/data and pip install again to copy the data in the proper folder.
+    The user must copy from gdrive the files probeDef_npf.npy,
+    allFramesOPD_0p5mps.npy and allFramesOPD_1p0mps.npy (that are too large
+    to be committed in the github repository) 
+    in appoppy/data/PowerFLOW_OPD_data_Jul22
+
+    and pip install again to copy the data in the proper installation folder.
 
     OPD cube are trimmed to have the telescope pupil centered on the central
     pixel of the array
