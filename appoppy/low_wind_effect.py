@@ -109,6 +109,8 @@ class LowWindEffectWavefront(ArrayOpticalElement):
     The user must copy the package from gdrive
     in appoppy/data and pip install again to copy the data in the proper folder.
 
+    OPD cube are trimmed to have the telescope pupil centered on the central
+    pixel of the array
 
     Parameters
     ----------
@@ -141,6 +143,10 @@ class LowWindEffectWavefront(ArrayOpticalElement):
         self._pxscale = self._lwe.pixelscale * u.m / u.pixel
         self._nframes = self._lwe.opd_cube().shape[0]
 
+        assert self._lwe._xvals[571] == 0, \
+            'Fatal error. Expect pixel 571 to have xcoord=0'
+        self._cube = self._lwe.opd_cube()[:, 0:571 * 2, :]
+
         if start_from is None:
             self._start_from = self._START_FROM
         else:
@@ -152,10 +158,6 @@ class LowWindEffectWavefront(ArrayOpticalElement):
         self.amplitude = (~self._cube[self._START_FROM].mask).astype(int)
         super(LowWindEffectWavefront, self).__init__(
             transmission=self.amplitude, pixelscale=self._pxscale, **kwargs)
-
-    @property
-    def _cube(self):
-        return self._lwe.opd_cube()
 
     @property
     def time_step(self):

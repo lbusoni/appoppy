@@ -181,17 +181,14 @@ class EltForPetalometry(object):
 
     def pupil_opd(self):
         osys = self._osys
-        opd0 = osys.planes[self._turbulence_plane].get_opd(
-            osys.input_wavefront(self.wavelength))
-        opd1 = osys.planes[self._lwe_plane].get_opd(
-            osys.input_wavefront(self.wavelength))
-        opd2 = osys.planes[self._zernike_wavefront_plane].get_opd(
-            osys.input_wavefront(self.wavelength))
-        opd3 = osys.planes[self._m4_wavefront_plane].get_opd(
-            osys.input_wavefront(self.wavelength))
+        scale = 2. * np.pi / self.wavelength.to_value(u.m)
+        wave = osys.input_wavefront(self.wavelength)
+        opd = 0
+        for plane in osys.planes:
+            if plane.planetype == PlaneType.pupil:
+                opd += np.angle(plane.get_phasor(wave)) / scale
 
-        opdm = np.ma.MaskedArray(
-            opd0 + opd1 + opd2 + opd3, mask=self.pupil_mask())
+        opdm = np.ma.MaskedArray(opd, mask=self.pupil_mask())
         return opdm * 1e9
 
     def _display_on_plane(self, what, plane_number, scale='linear'):
