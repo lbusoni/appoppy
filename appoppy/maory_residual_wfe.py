@@ -10,6 +10,16 @@ from appoppy import elt_aperture
 from scipy.ndimage import rotate
 
 
+def transfer_from_faramir_to_drive(tracking_number,
+                                   tag_profile='SteSci2021/P10'):
+    main_dir1 = '/Volumes/GoogleDrive/Drive condivisi/MORFEO-OAA/Petalometro Ciao Ciao/Simulazioni PASSATA/'
+    main_dir2 = '/Volumes/GoogleDrive/Drive\ condivisi/MORFEO-OAA/Petalometro\ Ciao\ Ciao/Simulazioni\ PASSATA/'
+    os.mkdir(os.path.join(main_dir1, tracking_number))
+    remote_path = "/raid1/guido/results/MAORY/%s/mcaoFull/" % tag_profile
+    os.system("scp " + "gcarla@faramir:" + remote_path + tracking_number + "/params.txt " + main_dir2 + tracking_number + "/")
+    os.system("scp -r " + "gcarla@faramir:" + remote_path + tracking_number + "_oaCUBEs/* " + main_dir2 + tracking_number + "/")
+
+
 class PASSATASimulationConverter():
     '''
     Convert data from PASSATA simulations in the standard used inside
@@ -59,7 +69,7 @@ class PASSATASimulationConverter():
                                        tracking_number,
                                        'CUBE_CL_coo%s_%s.fits' % (rho, theta))
         fname_newdir = os.path.join(data_root_dir(),
-                                  tracking_number + '_%s_%s' % (rho, theta))
+                                  tracking_number + '_coo%s_%s' % (rho, theta))
         os.mkdir(fname_newdir)
         fname_fits = os.path.join(fname_newdir, 'CUBE_CL_converted.fits')
         dat, hdr = fits.getdata(fname_orig_fits, 0, header=True)
