@@ -12,20 +12,66 @@ from appoppy.elt_aperture import ELTAperture
 import logging
 from appoppy.maory_residual_wfe import MaoryResidualWavefront
 from appoppy.low_wind_effect import LowWindEffectWavefront
+from appoppy.snapshotable import Snapshotable, SnapshotPrefix
 
 
-class EltForPetalometry(object):
+class EfpSnapshotEntry(object):
+    NAME = "NAME"
+    WAVELENGTH = "WL"
+    TELESCOPE_RADIUS = "TELE_RAD"
+    NPIX = "NPIX"
+    KOLMOGOROV_SEED = "KOLM_SEED"
+    PUPIL_ROTATION_ANGLE = "PUP_ROT_ANG"
+    LWE_WIND_SPEED = "LWE_WIND_SPEED"
+    ZERNIKE_COEFFICIENTS = "ZERN_COEFF"
+    R0 = "R0"
+    PASSATA_TRACKING_NUMBER = "TRACKNUM"
+    PASSATA_START_FROM = "RES_START_FROM"
+
+
+class EltForPetalometry(Snapshotable):
+    '''
+    Parameters
+    ----------
+    r0: float
+        r0 of Kolmogorov turbulence. Set it to np.inf to disable. Default=np.inf
+        Every temporal step generates a new Kolmogorov screen - no phase
+        screen wind propagation.
+
+    tracking_number: string
+        AO residual wfe to use. Set it to None to disable. Default=None
+
+    zern_coeff: tuple
+        Zernike coefficients of the static WFE to add to the pupil. Unit
+        in meters, starting from piston. Default=[0]
+
+    lwe_wind_speed: float or None
+        wind speed of low wind effect simulations in m/s.
+        Possible values (None, 0.5, 1.0). Set it to None to disable.
+        Default = None
+
+    rotation: float
+        rotation angle in degree of the petalometer
+
+    kolm_seed: int
+        seed of random number generator for Kolmogorov turbulence. Default=0
+
+    residual_wavefront_start_from: int
+        index of AO residual wfe frame to start from.
+        Used to skip the convergence. Default=100
+    '''
 
     def __init__(self,
+                 r0=np.inf,
+                 tracking_number=None,
                  zern_coeff=[0.0],
-                 use_simulated_residual_wfe=True,
-                 r0=999999,
-                 tracking_number='20210518_223459.0',
+                 lwe_speed=None,
                  rotation_angle=0,
                  kolm_seed=0,
                  residual_wavefront_start_from=100,
                  residual_wavefront_step=0,
                  residual_wavefront_average_on=1,
+                 npix=256,
                  name=''):
         self.name = name
         self._log = logging.getLogger('EltForPetalometry-%s' % self.name)
@@ -36,47 +82,43 @@ class EltForPetalometry(object):
                 u.arcsec, equivalencies=u.dimensionless_angles())
         self._kolm_seed = kolm_seed
         self.pupil_rotation_angle = rotation_angle
-        self._use_sim_res = use_simulated_residual_wfe
-        self._lwe_wind_speed = 0.5
+        self._lwe_wind_speed = lwe_speed
+        self._zern_coeff = np.array(zern_coeff)
+        self._r0 = r0
+        self._tracknum = tracking_number
 
-        if not self._use_sim_res:
-            r0l = r0 * u.m * (self.wavelength / (0.5e-6 * u.m))**(6 / 5)
-            atmo_wfe = poppy.KolmogorovWFE(
-                name='Turbulence',
-                r0=r0l,
-                dz=1 * u.m,
-                seed=self._kolm_seed)
-            npix = 480
-            time_step = 60  # each kolmo layer is decorrelated from the previous one
-            elt_aperture = ELTAperture()
-        else:
-            atmo_wfe = MaoryResidualWavefront(
-                tracking_number,
-                start_from=residual_wavefront_start_from,
-                step=residual_wavefront_step,
-                average_on=residual_wavefront_average_on)
-            npix = atmo_wfe.shape[-1]
-            time_step = atmo_wfe.time_step
-            elt_aperture = ELTAperture(atmo_wfe.pupiltag)
-
-        self.pixelsize = 2 * self.telescope_radius / npix
-        self.time_step = time_step
+        self._npix = npix
+        self.pixelsize = 2 * self.telescope_radius / self._npix
 
         self._osys = poppy.OpticalSystem(
             oversample=2,
-            npix=npix,
+            npix=self._npix,
             pupil_diameter=2 * self.telescope_radius)
-        self._osys.add_pupil(atmo_wfe)
+
+        r0l = self._r0 * u.m * (self.wavelength / (0.5e-6 * u.m))**(6 / 5)
+        kolmo_wfe = poppy.KolmogorovWFE(
+            name='Turbulence',
+            r0=r0l,
+            dz=1 * u.m,
+            seed=self._kolm_seed)
+        self._osys.add_pupil(kolmo_wfe)
+
+        self._aores_wfe = MaoryResidualWavefront(
+            self._tracknum,
+            start_from=residual_wavefront_start_from,
+            step=residual_wavefront_step,
+            average_on=residual_wavefront_average_on)
+        self._osys.add_pupil(self._aores_wfe)
+
         self._osys.add_rotation(30)
         self._osys.add_pupil(LowWindEffectWavefront(self._lwe_wind_speed))
         self._osys.add_rotation(-30)
+
         self._osys.add_pupil(poppy.ZernikeWFE(name='Zernike WFE',
                                               coefficients=zern_coeff,
                                               radius=self.telescope_radius))
         self._osys.add_pupil(PetaledM4())
-#        self._osys.add_pupil(poppy.SecondaryObscuration(
-#            secondary_radius=3.0, n_supports=6, support_width=50 * u.cm))
-        self._osys.add_pupil(elt_aperture)
+        self._osys.add_pupil(ELTAperture())
         self._osys.add_pupil(ScalarOpticalPathDifference(
             opd=0 * u.nm, planetype=PlaneType.pupil))
         self._osys.add_rotation(-1 * self.pupil_rotation_angle)
@@ -87,13 +129,34 @@ class EltForPetalometry(object):
             fov_arcsec=1)
 
         self._turbulence_plane = 0
-        self._lwe_plane = 2
-        self._zernike_wavefront_plane = 4
-        self._m4_wavefront_plane = 5
+        self._aores_plane = 1
+        self._lwe_plane = 3
+        self._zernike_wavefront_plane = 5
+        self._m4_wavefront_plane = 6
         self._phase_shift_plane = -4
         self._exit_pupil_plane = -2
+
         self.display_intermediates = False
         self._reset_intermediate_wfs()
+
+    def get_snapshot(self, prefix='EFP'):
+        snapshot = {}
+        snapshot[EfpSnapshotEntry.NAME] = self.name
+        snapshot[EfpSnapshotEntry.WAVELENGTH] = self.wavelength.to_value(u.nm)
+        snapshot[EfpSnapshotEntry.NPIX] = self._npix
+        snapshot[EfpSnapshotEntry.TELESCOPE_RADIUS] = \
+            self.telescope_radius.to_value(u.m)
+        snapshot[EfpSnapshotEntry.KOLMOGOROV_SEED] = self._kolm_seed
+        snapshot[EfpSnapshotEntry.PUPIL_ROTATION_ANGLE] = \
+            self.pupil_rotation_angle
+        snapshot[EfpSnapshotEntry.LWE_WIND_SPEED] = self._lwe_wind_speed
+        snapshot[EfpSnapshotEntry.ZERNIKE_COEFFICIENTS] = np.array2string(
+            self._zern_coeff)
+        snapshot[EfpSnapshotEntry.R0] = self._r0
+        snapshot[EfpSnapshotEntry.PASSATA_TRACKING_NUMBER] = self._tracknum
+        snapshot.update(
+            self._aores_wfe.get_snapshot(SnapshotPrefix.PASSATA_RESIDUAL))
+        return Snapshotable.prepend(prefix, snapshot)
 
     def _reset_intermediate_wfs(self):
         self._intermediates_wfs = None
@@ -104,6 +167,7 @@ class EltForPetalometry(object):
 
     def set_input_wavefront_zernike(self, zern_coeff):
         self._reset_intermediate_wfs()
+        self._zern_coeff = np.array(zern_coeff)
         in_wfe = poppy.ZernikeWFE(name='Zernike WFE',
                                   coefficients=zern_coeff,
                                   radius=self.telescope_radius)
@@ -125,9 +189,8 @@ class EltForPetalometry(object):
     def set_step_idx(self, step_idx):
         # advance residual phase screen only in the case of MORFEO
         # otherwise is Kolmogorov, every screen uncorrelated, no wind speed
-        if self._use_sim_res:
-            self._reset_intermediate_wfs()
-            self._osys.planes[self._turbulence_plane].set_step_idx(step_idx)
+        self._reset_intermediate_wfs()
+        self._osys.planes[self._aores_plane].set_step_idx(step_idx)
 
     def propagate(self):
         self._log.info('propagating')

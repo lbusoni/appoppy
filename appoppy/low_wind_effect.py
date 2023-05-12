@@ -27,7 +27,10 @@ class LowWindEffectLoader():
         self.time_step = 0.2013
         self.pixelscale = 0.035
 
-        if wind_speed == 0.5:
+        if wind_speed is None:
+            fname = os.path.join(root_folder, 'allFramesOPD_0p5mps.npy')
+            scaling_factor = 0
+        elif wind_speed == 0.5:
             fname = os.path.join(root_folder, 'allFramesOPD_0p5mps.npy')
             scaling_factor = 2.7
         elif wind_speed == 1.0:
@@ -41,13 +44,15 @@ class LowWindEffectLoader():
         self._opdAll = np.ma.array(
             [np.ma.masked_where(self._mask, scaling_factor * fr) for fr in opd]
         )
-        self._opdAvg = np.sum(self._opdAll, axis=0) / self._opdAll.shape[0]
+        self._opdAvg = None
 
     def opd_cube(self):
         return self._opdAll
 
     def opd_average(self):
-        # compute time averages of OPD
+        if self._opdAvg is None:
+            # compute time averages of OPD
+            self._opdAvg = np.sum(self._opdAll, axis=0) / self._opdAll.shape[0]
         return self._opdAvg
 
     def mask(self):
@@ -116,8 +121,8 @@ class LowWindEffectWavefront(ArrayOpticalElement):
 
     Parameters
     ----------
-    wind_speed: float
-        either 0.5 or 1 (m/s)
+    wind_speed: float or None
+        Must be in (0, 0.5, 1) (m/s). None returns null opd
     start_from: int (optional, default=0)
         first frame to use
     step: int (optional, default=0)

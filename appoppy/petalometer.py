@@ -5,58 +5,86 @@ from appoppy.elt_for_petalometry import EltForPetalometry
 from appoppy.mask import sector_mask
 from appoppy.circular_math import wrap_around_zero
 import logging
+from appoppy.snapshotable import SnapshotPrefix, Snapshotable
+from arte.utils.timestamp import Timestamp
 
 
-class Petalometer():
+class PetalometerSnapshotEntry(object):
+    TIMESTAMP = "TIMESTAMP"
+    STEP_IDX = "STEP_IDX"
+    AVERAGE_RESIDUAL_ON = "AVE_RES_ON"
+    PETALS = 'PETALS'
+
+
+class Petalometer(Snapshotable):
 
     def __init__(self,
-                 use_simulated_residual_wfe=True,
-                 r0=999999,
-                 tracking_number='20210518_223459.0',
-                 residual_wavefront_average_on=1,
+                 r0=np.inf,
+                 tracking_number=None,
+                 lwe_speed=None,
                  residual_wavefront_start_from=100,
+                 npix=256,
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  rotation_angle=15,
                  zernike=[0, 0],
-                 seed=None):
-        if seed is None:
+                 kolm_seed=None):
+        if kolm_seed is None:
             seed = np.random.randint(2147483647)
         # if residual_wavefront_index:
         #    residual_wavefront_index = np.random.randint(100, 1000)
 
         self._log = logging.getLogger('appoppy')
         self._step_idx = 0
-        self._res_average_on = residual_wavefront_average_on
+        self._res_average_on = 1
         self._should_display = True
+        self._petals = petals
 
         self._model1 = EltForPetalometry(
-            use_simulated_residual_wfe=use_simulated_residual_wfe,
             r0=r0,
             tracking_number=tracking_number,
             kolm_seed=seed,
+            lwe_speed=lwe_speed,
             rotation_angle=rotation_angle,
+            npix=npix,
             residual_wavefront_start_from=residual_wavefront_start_from,
-            residual_wavefront_average_on=residual_wavefront_average_on,
+            residual_wavefront_average_on=self._res_average_on,
             residual_wavefront_step=0,
             name='M1')
 
         self._model2 = EltForPetalometry(
-            use_simulated_residual_wfe=use_simulated_residual_wfe,
             r0=r0,
             tracking_number=tracking_number,
             kolm_seed=seed,
+            lwe_speed=lwe_speed,
             rotation_angle=0,
+            npix=npix,
             residual_wavefront_start_from=residual_wavefront_start_from,
-            residual_wavefront_average_on=residual_wavefront_average_on,
+            residual_wavefront_average_on=self._res_average_on,
             residual_wavefront_step=0,
             name='M2')
 
-        self.set_m4_petals(petals)
+        self.set_m4_petals(self._petals)
         self.set_zernike_wavefront(zernike)
 
         self._i4 = PhaseShiftInterferometer(self._model1,  self._model2)
         self._i4.combine()
         self.sense_wavefront_jumps()
+
+    def get_snapshot(self, prefix=SnapshotPrefix.PETALOMETER):
+        snapshot = {}
+        snapshot[PetalometerSnapshotEntry.TIMESTAMP] = Timestamp.nowUSec()
+        snapshot[PetalometerSnapshotEntry.STEP_IDX] = self._step_idx
+        snapshot[PetalometerSnapshotEntry.AVERAGE_RESIDUAL_ON] = \
+            self._res_average_on
+        snapshot[PetalometerSnapshotEntry.PETALS] = np.array2string(
+            self.petals)
+        snapshot.update(
+            self._model1.get_snapshot(SnapshotPrefix.PATH1))
+        snapshot.update(
+            self._model2.get_snapshot(SnapshotPrefix.PATH2))
+        snapshot.update(
+            self._i4.get_snapshot(SnapshotPrefix.PHASE_SHIFT_INTERFEROMETER))
+        return Snapshotable.prepend(prefix, snapshot)
 
     def should_display(self, true_or_false):
         self._should_display = true_or_false
@@ -93,15 +121,23 @@ class Petalometer():
         self._model2.set_input_wavefront_zernike(zernike_coefficients_in_m)
 
     def set_m4_petals(self, petals):
+        '''
+        Set M4 petals
+
+        Parameters
+        ----------
+        petals: astropy.quantity equivalent to u.m of shape (6,)
+            petals to be applied on M4
+        '''
         #self._petals = zero_mean(petals, self.wavelength)
         self._petals = petals
         self._model1.set_m4_petals(self._petals)
         self._model2.set_m4_petals(self._petals)
 
-    def set_atmospheric_wavefront(self, atmospheric_wavefront):
-        self._atmo_opd = atmospheric_wavefront
-        self._model1.set_atmospheric_wavefront(self._atmo_opd)
-        self._model2.set_atmospheric_wavefront(self._atmo_opd)
+    # def set_atmospheric_wavefront(self, atmospheric_wavefront):
+    #     self._atmo_opd = atmospheric_wavefront
+    #     self._model1.set_atmospheric_wavefront(self._atmo_opd)
+    #     self._model2.set_atmospheric_wavefront(self._atmo_opd)
 
     @property
     def petals(self):

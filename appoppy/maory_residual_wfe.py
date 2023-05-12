@@ -8,6 +8,7 @@ from astropy.io import fits
 import astropy.units as u
 from appoppy import elt_aperture
 from scipy.ndimage import rotate
+from appoppy.snapshotable import Snapshotable
 
 
 class PASSATASimulationConverter():
@@ -15,20 +16,20 @@ class PASSATASimulationConverter():
     Convert data from PASSATA simulations in the standard used inside
     "MaoryResidualWavefront" class.
     '''
-    
+
     def __init__(self):
         pass
 
     def convert_residual_wavefront(self):
-    
+
         fname_sav = os.path.join(data_root_dir(),
                                  '20210518_223459.0',
                                  'CUBE_CL_coo0.0_0.0.sav')
-    
+
         fname_fits = os.path.join(data_root_dir(),
                                   '20210518_223459.0',
                                   'CUBE_CL_coo0.0_0.0_converted.fits')
-    
+
         pupilmasktag = elt_aperture.PUPIL_MASK_480
         idl_dict = scipy.io.readsav(fname_sav)
         phase_screen = np.moveaxis(idl_dict['cube_k'], 2, 0)
@@ -38,13 +39,15 @@ class PASSATASimulationConverter():
         cmask = np.tile(mask, (phase_screen.shape[0], 1, 1))
         res_wfs = np.ma.masked_array(phase_screen, mask=cmask)
         header = fits.Header()
-        header['TN'] = idl_dict['tn'].decode("utf-8")
-        header['DIR'] = idl_dict['dir'].decode("utf-8")
-        header['COO_RO'] = float(idl_dict['polar_coordinates_k'][0])
-        header['COO_TH'] = float(idl_dict['polar_coordinates_k'][1])
-        header['PIXELSCL'] = maskhdr['PIXELSCL']
-        header['PUPILTAG'] = pupilmasktag
-        header['TIME_STEP'] = 0.002
+        header[AoResSnapshotEntry.TRACKING_NUMBER] = idl_dict['tn'].decode(
+            "utf-8")
+        header[AoResSnapshotEntry.COORDINATE_RHO] = \
+            float(idl_dict['polar_coordinates_k'][0])
+        header[AoResSnapshotEntry.COORDINATE_THETA] = \
+            float(idl_dict['polar_coordinates_k'][1])
+        header[AoResSnapshotEntry.PIXEL_SCALE] = maskhdr['PIXELSCL']
+        header[AoResSnapshotEntry.PUPIL_TAG] = pupilmasktag
+        header[AoResSnapshotEntry.TIME_STEP] = 0.002
         fits.writeto(fname_fits, res_wfs.data, header)
         fits.append(fname_fits, mask.astype(int))
 
@@ -59,7 +62,7 @@ class PASSATASimulationConverter():
                                        tracking_number,
                                        'CUBE_CL_coo%s_%s.fits' % (rho, theta))
         fname_newdir = os.path.join(data_root_dir(),
-                                  tracking_number + '_%s_%s' % (rho, theta))
+                                    tracking_number + '_%s_%s' % (rho, theta))
         os.mkdir(fname_newdir)
         fname_fits = os.path.join(fname_newdir, 'CUBE_CL_converted.fits')
         dat, hdr = fits.getdata(fname_orig_fits, 0, header=True)
@@ -67,23 +70,23 @@ class PASSATASimulationConverter():
         maskhdr = maskhdu.header
         mask = maskhdu.data
         rotation = float(maskhdr['ROTATION'])
-    
+
         phase_screen = rotate(
             dat, rotation, reshape=False, cval=0,
             mode='constant', axes=(1, 0))
-    
+
         phase_screen = np.moveaxis(phase_screen, -1, 0)
-    
+
         cmask = np.tile(mask, (phase_screen.shape[0], 1, 1))
         res_wfs = np.ma.masked_array(phase_screen, mask=cmask)
-    
+
         header = fits.Header()
-        header['TN'] = hdr['TN']
-        header['COO_RO'] = float(hdr['POCOO0'])
-        header['COO_TH'] = float(hdr['POCOO1'])
-        header['PIXELSCL'] = maskhdr['PIXELSCL']
-        header['PUPILTAG'] = pupilmasktag
-        header['TIME_STEP'] = timestep
+        header[AoResSnapshotEntry.TRACKING_NUMBER] = hdr['TN']
+        header[AoResSnapshotEntry.COORDINATE_RHO] = float(hdr['POCOO0'])
+        header[AoResSnapshotEntry.COORDINATE_THETA] = float(hdr['POCOO1'])
+        header[AoResSnapshotEntry.PIXEL_SCALE] = maskhdr['PIXELSCL']
+        header[AoResSnapshotEntry.PUPIL_TAG] = pupilmasktag
+        header[AoResSnapshotEntry.TIME_STEP] = timestep
         fits.writeto(fname_fits, res_wfs.data, header)
         fits.append(fname_fits, mask.astype(int))
 
@@ -100,7 +103,20 @@ def restore_residual_wavefront(tracking_number):
     return np.ma.masked_array(dat, mask=cmask), hdr
 
 
-class MaoryResidualWavefront(ArrayOpticalElement):
+class AoResSnapshotEntry(object):
+    TRACKING_NUMBER = 'TN'
+    PIXEL_SCALE = 'PIXELSCL'
+    PUPIL_TAG = 'PUPILTAG'
+    TIME_STEP = 'TIME_STEP'
+    STEP_IDX = 'STEP_IDX'
+    START_FROM_FRAME = 'START_FROM'
+    AVERAGE_HOW_MANY_FRAMES = 'AVE_ON'
+    ADVANCE_BY_FRAMES = 'STEP'
+    COORDINATE_RHO = 'COO_RO'
+    COORDINATE_THETA = 'COO_TH'
+
+
+class MaoryResidualWavefront(ArrayOpticalElement, Snapshotable):
     '''
     Return an OpticalElement whose opd represents the MAORY residual wavefront
     simulated by PASSATA
@@ -117,8 +133,8 @@ class MaoryResidualWavefront(ArrayOpticalElement):
 
     Parameters
     ----------
-    tracking_number: string
-        tracking number of the PASSATA simulation
+    tracking_number: string or None
+        tracking number of the PASSATA simulation. None returns null opds
     start_from: int (optional, default=100)
         first frame to use
     step: int (optional, default=0)
@@ -128,10 +144,10 @@ class MaoryResidualWavefront(ArrayOpticalElement):
 
     Example
     -------
-    MaoryResidualWavefron(start_from=200, step=0, average_on=1) returns always
+    MaoryResidualWavefront(start_from=200, step=0, average_on=1) returns always
     the 200th frame
 
-    MaoryResidualWavefron(start_from=200, step=50, average_on=10) yields
+    MaoryResidualWavefront(start_from=200, step=50, average_on=10) yields
     (mean(200:210), mean(250:260), mean(300:310)...)
     '''
     _START_FROM = 100
@@ -142,10 +158,12 @@ class MaoryResidualWavefront(ArrayOpticalElement):
                  step=0,
                  average_on=1,
                  **kwargs):
-        self._res_wf, hdr = restore_residual_wavefront(tracking_number)
-        self._pxscale = hdr['PIXELSCL'] * u.m / u.pixel
-        self._pupiltag = hdr['PUPILTAG']
-        self._time_step = hdr['TIME_STEP']
+        self._tracknum = tracking_number
+        self._res_wf, hdr = self._restore_residual_wavefront_or_none(
+            self._tracknum)
+        self._pxscale = hdr[AoResSnapshotEntry.PIXEL_SCALE] * u.m / u.pixel
+        self._pupiltag = hdr[AoResSnapshotEntry.PUPIL_TAG]
+        self._time_step = hdr[AoResSnapshotEntry.TIME_STEP]
         self._nframes = self._res_wf.shape[0]
 
         if start_from is None:
@@ -159,6 +177,32 @@ class MaoryResidualWavefront(ArrayOpticalElement):
         self.amplitude = (~self._res_wf[self._START_FROM].mask).astype(int)
         super(MaoryResidualWavefront, self).__init__(
             transmission=self.amplitude, pixelscale=self._pxscale, **kwargs)
+
+    def _restore_residual_wavefront_or_none(self, tracknum):
+        if tracknum is None:
+            res_wf = np.ma.masked_array(
+                np.zeros((500, 64, 64)),
+                mask=np.zeros((500, 64, 64), dtype=bool))
+            hdr = {}
+            hdr[AoResSnapshotEntry.PIXEL_SCALE] = 1
+            hdr[AoResSnapshotEntry.PUPIL_TAG] = 'None'
+            hdr[AoResSnapshotEntry.TIME_STEP] = 1
+        else:
+            res_wf, hdr = restore_residual_wavefront(tracknum)
+        return res_wf, hdr
+
+    def get_snapshot(self, prefix='AORES'):
+        snapshot = {}
+        snapshot[AoResSnapshotEntry.ADVANCE_BY_FRAMES] = self._step
+        snapshot[AoResSnapshotEntry.AVERAGE_HOW_MANY_FRAMES] = self._average_on
+        snapshot[AoResSnapshotEntry.PIXEL_SCALE] = self._pxscale.to_value(
+            u.m / u.pixel)
+        snapshot[AoResSnapshotEntry.PUPIL_TAG] = self._pupiltag
+        snapshot[AoResSnapshotEntry.START_FROM_FRAME] = self._start_from
+        snapshot[AoResSnapshotEntry.STEP_IDX] = self._step_idx
+        snapshot[AoResSnapshotEntry.TIME_STEP] = self._time_step
+        snapshot[AoResSnapshotEntry.TRACKING_NUMBER] = self._tracknum
+        return Snapshotable.prepend(prefix, snapshot)
 
     @property
     def time_step(self):

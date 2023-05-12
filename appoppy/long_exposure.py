@@ -5,19 +5,27 @@ import os
 from appoppy.ao_residuals import AOResidual
 from appoppy.petalometer import Petalometer
 from appoppy.gif_animator import Gif2DMapsAnimator
-from astropy.io.fits.header import Header
 from astropy.io import fits
 import matplotlib.pyplot as plt
+from appoppy.snapshotable import Snapshotable, SnapshotPrefix
 
 
-class LongExposurePetalometer():
+class LepSnapshotEntry(object):
+    NITER = 'NITER'
+    ROT_ANGLE = 'ROTANG'
+    TRACKNUM = 'TRACKNUM'
+    PIXELSZ = 'PIXELSZ'
+    STARTSTEP = 'STARTSTEP'
+
+
+class LongExposurePetalometer(Snapshotable):
 
     def __init__(self,
                  tracking_number,
                  rot_angle=10,
                  jpeg_root_folder=None):
-        self._niter = 1000
         self._start_from_step = 100
+        self._niter = 100
         self._rot_angle = rot_angle
         if jpeg_root_folder is None:
             home = str(Path.home())
@@ -32,10 +40,20 @@ class LongExposurePetalometer():
         self._pixelsize = None
         self._tracking_number = tracking_number
         self._aores = AOResidual(self._tracking_number)
+        self._pet = None
+
+    def get_snapshot(self, prefix='LEP'):
+        snapshot = {}
+        snapshot[LepSnapshotEntry.NITER] = self._niter
+        snapshot[LepSnapshotEntry.ROT_ANGLE] = self._rot_angle
+        snapshot[LepSnapshotEntry.TRACKNUM] = self._tracking_number
+        snapshot[LepSnapshotEntry.PIXELSZ] = self._pixelsize
+        snapshot[LepSnapshotEntry.STARTSTEP] = self._start_from_step
+        snapshot.update(self._pet.get_snapshot(SnapshotPrefix.PETALOMETER))
+        return Snapshotable.prepend(prefix, snapshot)
 
     def run(self):
         self._pet = Petalometer(
-            use_simulated_residual_wfe=True,
             tracking_number=self._tracking_number,
             petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
             residual_wavefront_start_from=self._start_from_step,
@@ -163,12 +181,7 @@ class LongExposurePetalometer():
             vminmax=vminmax).make_gif(step=10, cmap='cividis')
 
     def save(self, filename):
-        hdr = Header()
-        hdr['NITER'] = self._niter
-        hdr['ROTANG'] = self._rot_angle
-        hdr['TRACKNUM'] = self._tracking_number
-        hdr['PIXELSZ'] = self._pixelsize
-        hdr['STARTSTEP'] = self._start_from_step
+        hdr = Snapshotable.as_fits_header(self.get_snapshot('LPE'))
         fits.writeto(filename, self.phase_difference().data,
                      header=hdr, overwrite=True)
         fits.append(filename, self.phase_difference().mask.astype(int))
@@ -177,11 +190,12 @@ class LongExposurePetalometer():
     @staticmethod
     def load(filename):
         hdr = fits.getheader(filename)
-        soi = LongExposurePetalometer(hdr['TRACKNUM'],
-                                      rot_angle=hdr['ROTANG'])
-        soi._niter = hdr['NITER']
-        soi._pixelsize = hdr['PIXELSZ']
-        soi._start_from_step = hdr['STARTSTEP']
+        soi = LongExposurePetalometer(
+            hdr['LPE.' + LepSnapshotEntry.TRACKNUM],
+            rot_angle=hdr['LPE.' + LepSnapshotEntry.ROT_ANGLE])
+        soi._niter = hdr['LPE.' + LepSnapshotEntry.NITER]
+        soi._pixelsize = hdr['LPE.' + LepSnapshotEntry.PIXELSZ]
+        soi._start_from_step = hdr['LPE.' + LepSnapshotEntry.STARTSTEP]
         res_map_d = fits.getdata(filename, 0)
         res_map_m = fits.getdata(filename, 1).astype(bool)
         soi._phase_diff = np.ma.masked_array(data=res_map_d, mask=res_map_m)
@@ -213,10 +227,9 @@ class LongExposurePetalometer():
     def phase_correction_from_petalometer(self):
         pp, jj = self.petals_from_phase_difference_ave()
         pet = Petalometer(
-            use_simulated_residual_wfe=False,
-            r0=999999,
             petals=pp,
-            rotation_angle=self._rot_angle)
+            rotation_angle=self._rot_angle,
+            npix=self.phase_screen_ave().shape[0])
         opd = pet._model2.pupil_opd()
         return opd
 

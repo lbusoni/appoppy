@@ -6,9 +6,14 @@ import matplotlib
 import matplotlib.pyplot as plt
 from appoppy.mask import mask_from_median
 import logging
+from appoppy.snapshotable import Snapshotable
 
 
-class PhaseShiftInterferometer():
+class PsiSnapshotEntry(object):
+    SHOULD_UNWRAP = "SHOULD_UNWRAP"
+
+
+class PhaseShiftInterferometer(Snapshotable):
     '''
     Returns an Optical System mimicking a phase shift interferometer
 
@@ -36,6 +41,11 @@ class PhaseShiftInterferometer():
         self._log = logging.getLogger('appoppy')
         # assert self._os1.wavelength == self._os2.wavelength
         # TODO probably some check?
+
+    def get_snapshot(self, prefix='PSI'):
+        snapshot = {}
+        snapshot[PsiSnapshotEntry.SHOULD_UNWRAP] = self._should_unwrap
+        return Snapshotable.prepend(prefix, snapshot)
 
     def combine(self):
         self._ios = poppy.OpticalSystem(
