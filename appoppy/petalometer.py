@@ -14,6 +14,7 @@ class PetalometerSnapshotEntry(object):
     STEP_IDX = "STEP_IDX"
     AVERAGE_RESIDUAL_ON = "AVE_RES_ON"
     PETALS = 'PETALS'
+    SHOULD_DISPLAY = 'SHOULD_DISPLAY'
 
 
 class Petalometer(Snapshotable):
@@ -27,7 +28,8 @@ class Petalometer(Snapshotable):
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  rotation_angle=15,
                  zernike=[0, 0],
-                 kolm_seed=None):
+                 kolm_seed=None,
+                 should_display=True):
         if kolm_seed is None:
             seed = np.random.randint(2147483647)
         # if residual_wavefront_index:
@@ -36,7 +38,7 @@ class Petalometer(Snapshotable):
         self._log = logging.getLogger('appoppy')
         self._step_idx = 0
         self._res_average_on = 1
-        self._should_display = True
+        self._should_display = should_display
         self._petals = petals
 
         self._model1 = EltForPetalometry(
@@ -76,6 +78,8 @@ class Petalometer(Snapshotable):
         snapshot[PetalometerSnapshotEntry.STEP_IDX] = self._step_idx
         snapshot[PetalometerSnapshotEntry.AVERAGE_RESIDUAL_ON] = \
             self._res_average_on
+        snapshot[PetalometerSnapshotEntry.SHOULD_DISPLAY] = \
+            self._should_display
         snapshot[PetalometerSnapshotEntry.PETALS] = np.array2string(
             self.petals)
         snapshot.update(

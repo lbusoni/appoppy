@@ -4,8 +4,11 @@ from pathlib import Path
 
 
 def main_save():
-    tracking_number = '20221026_123454.0'
-    lep = LongExposurePetalometer(tracking_number, rot_angle=10)
+    tracking_number = '20221026_123454.0_coo0.0_0.0'
+    lep = LongExposurePetalometer(tracking_number,
+                                  rot_angle=10,
+                                  start_from_step=100,
+                                  n_iter=20)
     lep.run()
     lep.save(os.path.join(
         str(Path.home()), 'appoppy', tracking_number, 'lep.fits'))
@@ -13,7 +16,7 @@ def main_save():
 
 
 def main_load():
-    tracking_number = '20221026_123454.0'
+    tracking_number = '20221026_123454.0_coo0.0_0.0'
     filename = os.path.join(
         str(Path.home()), 'appoppy', tracking_number, 'lep.fits')
     lep = LongExposurePetalometer.load(filename)

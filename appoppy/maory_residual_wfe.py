@@ -40,7 +40,7 @@ class PASSATASimulationConverter():
 
         fname_fits = os.path.join(data_root_dir(),
                                   '20210518_223459.0',
-                                  'CUBE_CL_coo0.0_0.0_converted.fits')
+                                  'CUBE_CL_converted.fits')
 
         pupilmasktag = elt_aperture.PUPIL_MASK_480
         idl_dict = scipy.io.readsav(fname_sav)

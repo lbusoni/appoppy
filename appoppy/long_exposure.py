@@ -23,9 +23,11 @@ class LongExposurePetalometer(Snapshotable):
     def __init__(self,
                  tracking_number,
                  rot_angle=10,
-                 jpeg_root_folder=None):
-        self._start_from_step = 100
-        self._niter = 100
+                 jpeg_root_folder=None,
+                 start_from_step=100,
+                 n_iter=1000):
+        self._start_from_step = start_from_step
+        self._niter = n_iter
         self._rot_angle = rot_angle
         if jpeg_root_folder is None:
             home = str(Path.home())
@@ -57,7 +59,8 @@ class LongExposurePetalometer(Snapshotable):
             tracking_number=self._tracking_number,
             petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
             residual_wavefront_start_from=self._start_from_step,
-            rotation_angle=self._rot_angle)
+            rotation_angle=self._rot_angle,
+            should_display=False)
         self._pixelsize = self._pet.pixelsize.to_value(u.m)
         sh = (self._niter,
               self._pet.phase_difference_map.shape[0],
@@ -181,6 +184,8 @@ class LongExposurePetalometer(Snapshotable):
             vminmax=vminmax).make_gif(step=10, cmap='cividis')
 
     def save(self, filename):
+        rootpath = Path(filename).parent.absolute()
+        rootpath.mkdir(parents=True, exist_ok=True)
         hdr = Snapshotable.as_fits_header(self.get_snapshot('LPE'))
         fits.writeto(filename, self.phase_difference().data,
                      header=hdr, overwrite=True)
@@ -192,10 +197,10 @@ class LongExposurePetalometer(Snapshotable):
         hdr = fits.getheader(filename)
         soi = LongExposurePetalometer(
             hdr['LPE.' + LepSnapshotEntry.TRACKNUM],
-            rot_angle=hdr['LPE.' + LepSnapshotEntry.ROT_ANGLE])
-        soi._niter = hdr['LPE.' + LepSnapshotEntry.NITER]
+            rot_angle=hdr['LPE.' + LepSnapshotEntry.ROT_ANGLE],
+            start_from_step=hdr['LPE.' + LepSnapshotEntry.STARTSTEP],
+            n_iter=hdr['LPE.' + LepSnapshotEntry.NITER])
         soi._pixelsize = hdr['LPE.' + LepSnapshotEntry.PIXELSZ]
-        soi._start_from_step = hdr['LPE.' + LepSnapshotEntry.STARTSTEP]
         res_map_d = fits.getdata(filename, 0)
         res_map_m = fits.getdata(filename, 1).astype(bool)
         soi._phase_diff = np.ma.masked_array(data=res_map_d, mask=res_map_m)
