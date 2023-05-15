@@ -17,9 +17,9 @@ def transfer_from_faramir_to_drive(tracking_number,
     main_dir2 = '/Volumes/GoogleDrive/Drive\ condivisi/MORFEO-OAA/Petalometro\ Ciao\ Ciao/Simulazioni\ PASSATA/'
     os.mkdir(os.path.join(main_dir1, tracking_number))
     remote_path = "/raid1/guido/results/MAORY/%s/mcaoFull/" % tag_profile
-    os.system("scp " + "gcarla@faramir:" + remote_path + tracking_number +
+    os.system("scp " + "gcarla@faramir:" + remote_path + tracking_number + 
               "/params.txt " + main_dir2 + tracking_number + "/")
-    os.system("scp -r " + "gcarla@faramir:" + remote_path +
+    os.system("scp -r " + "gcarla@faramir:" + remote_path + 
               tracking_number + "_oaCUBEs/* " + main_dir2 + tracking_number + "/")
 
 
@@ -65,6 +65,7 @@ class PASSATASimulationConverter():
 
     def convert_hires_wavefront(self, tracking_number):
         self.convert_from_fits_data(tracking_number,
+                                    '0.0', '0.0',
                                     elt_aperture.PUPIL_MASK_512,
                                     0.001)
 
