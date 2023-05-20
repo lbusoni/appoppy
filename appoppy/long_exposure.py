@@ -32,7 +32,8 @@ class LongExposurePetalometer(Snapshotable):
         if jpeg_root_folder is None:
             home = str(Path.home())
             jpeg_root_folder = os.path.join(
-                home, 'appoppy_anim', tracking_number)
+                home, 'appoppy_anim',
+                tracking_number if tracking_number else "none")
         self._jpg_root = jpeg_root_folder
         self._phase_diff_cumave = None
         self._phase_diff = None

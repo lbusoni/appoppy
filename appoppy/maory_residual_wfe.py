@@ -65,6 +65,8 @@ class PASSATASimulationConverter():
 
     def convert_hires_wavefront(self, tracking_number):
         self.convert_from_fits_data(tracking_number,
+                                    0.,
+                                    0.,
                                     elt_aperture.PUPIL_MASK_512,
                                     0.001)
 
@@ -101,6 +103,24 @@ class PASSATASimulationConverter():
         header[AoResSnapshotEntry.TIME_STEP] = timestep
         fits.writeto(fname_fits, res_wfs.data, header)
         fits.append(fname_fits, mask.astype(int))
+
+    def create_none_tracknum(self):
+        mask = np.zeros((500, 64, 64), dtype=bool)
+        res_wf = np.ma.masked_array(
+            np.zeros((500, 64, 64)),
+            mask=mask)
+        header = fits.Header()
+        header[AoResSnapshotEntry.TRACKING_NUMBER] = 'None'
+        header[AoResSnapshotEntry.COORDINATE_RHO] = float(0)
+        header[AoResSnapshotEntry.COORDINATE_THETA] = float(0)
+        header[AoResSnapshotEntry.PIXEL_SCALE] = 1
+        header[AoResSnapshotEntry.PUPIL_TAG] = 'None'
+        header[AoResSnapshotEntry.TIME_STEP] = 1
+        fname_newdir = os.path.join(data_root_dir(), 'none')
+        os.mkdir(fname_newdir)
+        fname_fits = os.path.join(fname_newdir, 'CUBE_CL_converted.fits')
+        fits.writeto(fname_fits, res_wf.data, header)
+        fits.append(fname_fits, mask[0].astype(int))
 
 
 def restore_residual_wavefront(tracking_number):

@@ -5,6 +5,14 @@ import os
 from poppy.poppy_core import ArrayOpticalElement
 import astropy.units as u
 from appoppy.package_data import data_root_dir
+from astropy.io.fits.header import Header
+from astropy.io import fits
+
+
+class LweSnapshotEntry(object):
+    PIXEL_SCALE = 'PIXELSCL'
+    TIME_STEP = 'TIMESTEP'
+    WIND_SPEED = 'WINDSPE'
 
 
 class LowWindEffectLoader():
@@ -96,6 +104,16 @@ class LowWindEffectLoader():
         plt.tight_layout()
 
         plt.show()
+
+    def save_to_fits(self, filename):
+        hdr = Header()
+        hdr[LweSnapshotEntry.PIXEL_SCALE] = self.pixelscale
+        hdr[LweSnapshotEntry.TIME_STEP] = self.time_step
+        hdr[LweSnapshotEntry.WIND_SPEED] = self.wind_speed
+        cc = self.opd_cube()[:, 0:571 * 2, 29:-29]
+        fits.writeto(filename, cc.data,
+                     header=hdr, overwrite=True)
+        fits.append(filename, cc[0].mask.astype(int))
 
 
 class LowWindEffectWavefront(ArrayOpticalElement):
