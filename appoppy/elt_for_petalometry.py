@@ -50,7 +50,7 @@ class EltForPetalometry(Snapshotable):
         Possible values (None, 0.5, 1.0). Set it to None to disable.
         Default = None
 
-    rotation: float
+    rotation_angle: float
         rotation angle in degree of the petalometer
 
     kolm_seed: int
@@ -72,11 +72,13 @@ class EltForPetalometry(Snapshotable):
                  residual_wavefront_step=0,
                  residual_wavefront_average_on=1,
                  npix=256,
+                 wavelength=2.2e-6 * u.m,
+                 telescope_radius=19.8 * u.m,
                  name=''):
         self.name = name
         self._log = logging.getLogger('EltForPetalometry-%s' % self.name)
-        self.wavelength = 2.2e-6 * u.m
-        self.telescope_radius = 19.8 * u.m
+        self.wavelength = wavelength
+        self.telescope_radius = telescope_radius
         self.lambda_over_d = (
             self.wavelength / (2 * self.telescope_radius)).to(
                 u.arcsec, equivalencies=u.dimensionless_angles())
@@ -207,8 +209,8 @@ class EltForPetalometry(Snapshotable):
             display_intermediates=self.display_intermediates,
             normalize='first')
 
-    def display_psf(self):
-        poppy.display_psf(self._psf)
+    def display_psf(self, **kwargs):
+        poppy.display_psf(self._psf, **kwargs)
 
     def _pump_up_zero_for_log_display(self, image):
         ret = image * 1.0
@@ -246,12 +248,19 @@ class EltForPetalometry(Snapshotable):
 
     def pupil_opd(self):
         osys = self._osys
-        scale = 2. * np.pi / self.wavelength.to_value(u.m)
         wave = osys.input_wavefront(self.wavelength)
         opd = 0
-        for plane in osys.planes:
-            if plane.planetype == PlaneType.pupil:
-                opd += np.angle(plane.get_phasor(wave)) / scale
+
+        def _trick_to_get_resampled_opd(plane):
+            _ = plane.get_phasor(wave)
+            return plane._resampled_opd
+
+        opd += osys.planes[self._turbulence_plane].get_opd(wave)
+        opd += _trick_to_get_resampled_opd(osys.planes[self._aores_plane])
+        opd += _trick_to_get_resampled_opd(osys.planes[self._lwe_plane])
+        opd += osys.planes[self._zernike_wavefront_plane].get_opd(wave)
+        opd += osys.planes[self._m4_wavefront_plane].get_opd(wave)
+        opd += osys.planes[self._phase_shift_plane].get_opd(wave)
 
         opdm = np.ma.MaskedArray(opd, mask=self.pupil_mask())
         return opdm * 1e9
@@ -302,7 +311,7 @@ class EltForPetalometry(Snapshotable):
     def display_pupil_phase(self, **kw):
         self.display_phase_on_plane(self._exit_pupil_plane, **kw)
 
-    def display_pupil_opd(self, **kw):
+    def display_pupil_opd(self, title='Total OPD', **kw):
         wave = self._wave(0)
         image = self.pupil_opd()
         norm = matplotlib.colors.Normalize()
@@ -312,7 +321,7 @@ class EltForPetalometry(Snapshotable):
 
         plt.clf()
         plt.imshow(image, norm=norm, extent=extent, origin='lower', cmap=cmap)
-        plt.title("Total OPD")
+        plt.title(title)
         plt.colorbar()
 
     def plot_pupil_intensity_row(self, row=None, scale='linear'):
