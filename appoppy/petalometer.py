@@ -68,7 +68,7 @@ class Petalometer(Snapshotable):
         self.set_m4_petals(self._petals)
         self.set_zernike_wavefront(zernike)
 
-        self._i4 = PhaseShiftInterferometer(self._model1,  self._model2)
+        self._i4 = PhaseShiftInterferometer(self._model1, self._model2)
         self._i4.combine()
         self.sense_wavefront_jumps()
 
@@ -133,7 +133,7 @@ class Petalometer(Snapshotable):
         petals: astropy.quantity equivalent to u.m of shape (6,)
             petals to be applied on M4
         '''
-        #self._petals = zero_mean(petals, self.wavelength)
+        # self._petals = zero_mean(petals, self.wavelength)
         self._petals = petals
         self._model1.set_m4_petals(self._petals)
         self._model2.set_m4_petals(self._petals)
@@ -204,6 +204,7 @@ class Petalometer(Snapshotable):
 
     def _compute_jumps_of_interferogram(self):
         r = self._model1.pupil_rotation_angle
+        # TODO: replace 'image' with 'self.phase_difference_map'
         image = self._i4.interferogram()
         self._jumps = self.compute_jumps(image, r)
 
@@ -215,7 +216,7 @@ class Petalometer(Snapshotable):
         for i in range(len(angs) - 1):
             ifm = cls._mask_ifgram(image, (angs[i + 1], angs[i]))
             res[i] = np.ma.median(ifm)
-        #res = wrap_around_zero(res * u.nm, self.wavelength)
+        # res = wrap_around_zero(res * u.nm, self.wavelength)
         return res * u.nm
 
     @classmethod

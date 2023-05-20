@@ -65,8 +65,7 @@ class PASSATASimulationConverter():
 
     def convert_hires_wavefront(self, tracking_number):
         self.convert_from_fits_data(tracking_number,
-                                    0.,
-                                    0.,
+                                    '0.0', '0.0',
                                     elt_aperture.PUPIL_MASK_512,
                                     0.001)
 

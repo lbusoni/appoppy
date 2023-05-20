@@ -23,12 +23,14 @@ class LongExposurePetalometer(Snapshotable):
     def __init__(self,
                  tracking_number,
                  rot_angle=10,
+                 petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  jpeg_root_folder=None,
                  start_from_step=100,
                  n_iter=1000):
         self._start_from_step = start_from_step
         self._niter = n_iter
         self._rot_angle = rot_angle
+        self._petals = petals
         if jpeg_root_folder is None:
             home = str(Path.home())
             jpeg_root_folder = os.path.join(
@@ -58,7 +60,7 @@ class LongExposurePetalometer(Snapshotable):
     def run(self):
         self._pet = Petalometer(
             tracking_number=self._tracking_number,
-            petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
+            petals=self._petals,
             residual_wavefront_start_from=self._start_from_step,
             rotation_angle=self._rot_angle,
             should_display=False)
