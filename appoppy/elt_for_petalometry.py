@@ -162,6 +162,7 @@ class EltForPetalometry(Snapshotable):
 
     def _reset_intermediate_wfs(self):
         self._intermediates_wfs = None
+        self._psf = None
 
     # def set_atmospheric_wavefront(self, atmo_opd):
     #     self._reset_intermediate_wfs()
@@ -189,10 +190,14 @@ class EltForPetalometry(Snapshotable):
         self._osys.planes[self._phase_shift_plane] = in_wfe
 
     def set_step_idx(self, step_idx):
-        # advance residual phase screen only in the case of MORFEO
-        # otherwise is Kolmogorov, every screen uncorrelated, no wind speed
+        # advance residual phase screen
         self._reset_intermediate_wfs()
         self._osys.planes[self._aores_plane].set_step_idx(step_idx)
+
+    def set_kolm_seed(self, seed):
+        self._reset_intermediate_wfs()
+        self._osys.planes[self._turbulence_plane].seed = seed
+        self._kolm_seed = seed
 
     def propagate(self):
         self._log.info('propagating')
@@ -209,8 +214,13 @@ class EltForPetalometry(Snapshotable):
             display_intermediates=self.display_intermediates,
             normalize='first')
 
+    def psf(self):
+        if not self._intermediates_wfs:
+            self.compute_psf()
+        return self._psf
+
     def display_psf(self, **kwargs):
-        poppy.display_psf(self._psf, **kwargs)
+        poppy.display_psf(self.psf(), **kwargs)
 
     def _pump_up_zero_for_log_display(self, image):
         ret = image * 1.0
@@ -247,6 +257,8 @@ class EltForPetalometry(Snapshotable):
         return mask_from_median(self.pupil_intensity(), 10)
 
     def pupil_opd(self):
+        if not self._intermediates_wfs:
+            self.propagate()
         osys = self._osys
         wave = osys.input_wavefront(self.wavelength)
         opd = 0
