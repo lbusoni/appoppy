@@ -5,8 +5,9 @@ import os
 from appoppy.package_data import data_root_dir
 from scipy.ndimage import rotate
 
-
 PUPIL_MASK_480 = 'EELT480pp0.0813spider.fits'
+PUPIL_MASK_480_PHASE_B = 'EELT480pp0.0813spiderRoundObs.fits'
+PUPIL_MASK_480_PHASE_C = 'EELT480pp0.0813spiderRoundObsCentered.fits'
 PUPIL_MASK_512 = 'EELT512pp0.0762nogapRoundObs.fits'
 
 
@@ -21,6 +22,12 @@ def restore_elt_pupil_mask(pupil_mask_tag):
     # it should be read from params.txt MAIN PIXEL_PITCH
     if pupil_mask_tag == PUPIL_MASK_480:
         pixel_pitch = 0.08215
+        rotation = 0
+    elif pupil_mask_tag == PUPIL_MASK_480_PHASE_B:
+        pixel_pitch = 0.081249997
+        rotation = 0
+    elif pupil_mask_tag == PUPIL_MASK_480_PHASE_C:
+        pixel_pitch = 0.080208331
         rotation = 0
     elif pupil_mask_tag == PUPIL_MASK_512:
         pixel_pitch = 0.076171875
@@ -38,8 +45,10 @@ def restore_elt_pupil_mask(pupil_mask_tag):
 
 
 def ELTAperture(pupil_mask_tag=PUPIL_MASK_480):
+
     def _invert_int_mask(mask):
         return -mask + 1
+
     hdumask = restore_elt_pupil_mask(pupil_mask_tag)
     hdumask.data = _invert_int_mask(hdumask.data)
     return poppy.FITSOpticalElement(
