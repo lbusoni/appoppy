@@ -28,6 +28,7 @@ class Petalometer(Snapshotable):
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  rotation_angle=15,
                  zernike=[0, 0],
+                 wavelength=2.2e-6 * u.m,
                  kolm_seed=None,
                  should_display=True):
         if kolm_seed is None:
@@ -48,6 +49,7 @@ class Petalometer(Snapshotable):
             lwe_speed=lwe_speed,
             rotation_angle=rotation_angle,
             npix=npix,
+            wavelength=wavelength,
             residual_wavefront_start_from=residual_wavefront_start_from,
             residual_wavefront_average_on=self._res_average_on,
             residual_wavefront_step=0,
@@ -60,6 +62,7 @@ class Petalometer(Snapshotable):
             lwe_speed=lwe_speed,
             rotation_angle=0,
             npix=npix,
+            wavelength=wavelength,
             residual_wavefront_start_from=residual_wavefront_start_from,
             residual_wavefront_average_on=self._res_average_on,
             residual_wavefront_step=0,

@@ -24,6 +24,7 @@ class LongExposurePetalometer(Snapshotable):
                  tracking_number,
                  rot_angle=10,
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
+                 wavelength=2.2e-6 * u.m,
                  jpeg_root_folder=None,
                  start_from_step=100,
                  n_iter=1000):
@@ -31,6 +32,7 @@ class LongExposurePetalometer(Snapshotable):
         self._niter = n_iter
         self._rot_angle = rot_angle
         self._petals = petals
+        self._wavelength = wavelength
         if jpeg_root_folder is None:
             home = str(Path.home())
             jpeg_root_folder = os.path.join(
@@ -63,6 +65,7 @@ class LongExposurePetalometer(Snapshotable):
             petals=self._petals,
             residual_wavefront_start_from=self._start_from_step,
             rotation_angle=self._rot_angle,
+            wavelength=self._wavelength,
             should_display=False)
         self._pixelsize = self._pet.pixelsize.to_value(u.m)
         sh = (self._niter,
@@ -233,11 +236,13 @@ class LongExposurePetalometer(Snapshotable):
         return pp, jj
 
     def phase_correction_from_petalometer(self):
-        pp, jj = self.petals_from_phase_difference_ave()
+        pp, _ = self.petals_from_phase_difference_ave()
         pet = Petalometer(
             petals=pp,
             rotation_angle=self._rot_angle,
-            npix=self.phase_screen_ave().shape[0])
+            npix=self.phase_screen_ave().shape[0],
+            wavelength=self._wavelength,
+            should_display=False)
         opd = pet._model2.pupil_opd()
         return opd
 

@@ -97,7 +97,7 @@ class EltForPetalometry(Snapshotable):
             npix=self._npix,
             pupil_diameter=2 * self.telescope_radius)
 
-        r0l = self._r0 * u.m * (self.wavelength / (0.5e-6 * u.m))**(6 / 5)
+        r0l = self._r0 * u.m * (self.wavelength / (0.5e-6 * u.m)) ** (6 / 5)
         kolmo_wfe = poppy.KolmogorovWFE(
             name='Turbulence',
             r0=r0l,
@@ -344,9 +344,9 @@ class EltForPetalometry(Snapshotable):
             row = int(image.shape[0] / 2)
 
         if scale == 'linear':
-            plt.plot(image[row, :])
+            plt.plot(image[row,:])
         elif scale == 'log':
-            plt.semilogy(image[row, :])
+            plt.semilogy(image[row,:])
         else:
             raise Exception('Unknown scale %s' % scale)
         plt.title(title)
