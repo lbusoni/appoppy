@@ -130,9 +130,9 @@ class EltForPetalometry(Snapshotable):
 
         self._turbulence_plane = 0
         self._aores_plane = 1
-        self._lwe_plane = 3
-        self._zernike_wavefront_plane = 5
-        self._m4_wavefront_plane = 6
+        self._lwe_plane = 2
+        self._zernike_wavefront_plane = 3
+        self._m4_wavefront_plane = 4
         self._phase_shift_plane = -4
         self._exit_pupil_plane = -2
 
@@ -342,9 +342,9 @@ class EltForPetalometry(Snapshotable):
             row = int(image.shape[0] / 2)
 
         if scale == 'linear':
-            plt.plot(image[row,:])
+            plt.plot(image[row, :])
         elif scale == 'log':
-            plt.semilogy(image[row,:])
+            plt.semilogy(image[row, :])
         else:
             raise Exception('Unknown scale %s' % scale)
         plt.title(title)
