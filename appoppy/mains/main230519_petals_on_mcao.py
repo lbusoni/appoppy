@@ -200,3 +200,29 @@ def main230605_mean_on_sector(angs=(30, 90)):
     cube_maps = lwe._cube
     masks = mask_phase_screen(cube_maps, angs)
     return cube_maps, masks
+
+
+def main230605_petals_on_LWE():
+    rot_angle = 60
+    wv = 24e-6 * u.m
+    pet = Petalometer(lwe_speed=0.5, wavelength=wv,
+                      rotation_angle=rot_angle)
+    phase_screens = pet.pupil_opd
+    jj = pet.compute_jumps(pet.phase_difference_map, rot_angle)
+    pp = -1 * np.cumsum(jj[::2])
+    pp = pp - pp.mean()
+    pet_corr = Petalometer(
+                petals=pp,
+                rotation_angle=rot_angle,
+                npix=phase_screens.shape[0],
+                wavelength=wv,
+                should_display=False)
+    phase_correction = pet_corr.pupil_opd
+    phase_screens_res = phase_screens - phase_correction
+    std_lwe = phase_screens.std()
+    std_res = phase_screens_res.std()
+    print('\n\nLWE maps stds: %s' % std_lwe)
+    print(
+        '\nLWE maps (with petalometer correction) stds: %s' 
+        % std_res)
+    return pet
