@@ -105,6 +105,10 @@ class Petalometer(Snapshotable):
         return self._model1.pixelsize
 
     @property
+    def pupil_opd(self):
+        return self._model2.pupil_opd()
+
+    @property
     def phase_difference_map(self):
         '''
         Map of phase difference between subapertures overlapped by the
