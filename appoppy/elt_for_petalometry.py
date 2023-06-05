@@ -112,9 +112,7 @@ class EltForPetalometry(Snapshotable):
             average_on=residual_wavefront_average_on)
         self._osys.add_pupil(self._aores_wfe)
 
-        self._osys.add_rotation(30)
         self._osys.add_pupil(LowWindEffectWavefront(self._lwe_wind_speed))
-        self._osys.add_rotation(-30)
 
         self._osys.add_pupil(poppy.ZernikeWFE(name='Zernike WFE',
                                               coefficients=zern_coeff,

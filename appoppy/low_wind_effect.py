@@ -170,7 +170,8 @@ class LowWindEffectWavefront(ArrayOpticalElement):
 
         assert self._lwe._xvals[571] == 0, \
             'Fatal error. Expect pixel 571 to have xcoord=0'
-        self._cube = self._lwe.opd_cube()[:, 0:571 * 2, :]
+        self._cube = np.transpose(self._lwe.opd_cube()[:, 0:571 * 2,:],
+                                  axes=(0, 2, 1)) 
 
         if start_from is None:
             self._start_from = self._START_FROM
