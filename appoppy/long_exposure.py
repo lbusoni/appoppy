@@ -16,7 +16,9 @@ class LepSnapshotEntry(object):
     TRACKNUM = 'TRACKNUM'
     PIXELSZ = 'PIXELSZ'
     STARTSTEP = 'STARTSTEP'
-
+    PETALS = 'PETALS'
+    WAVELENGTH = 'WAVELENGTH'
+    
 
 class LongExposurePetalometer(Snapshotable):
 
@@ -56,6 +58,8 @@ class LongExposurePetalometer(Snapshotable):
         snapshot[LepSnapshotEntry.TRACKNUM] = self._tracking_number
         snapshot[LepSnapshotEntry.PIXELSZ] = self._pixelsize
         snapshot[LepSnapshotEntry.STARTSTEP] = self._start_from_step
+        snapshot[LepSnapshotEntry.PETALS] = self._petals
+        snapshot[LepSnapshotEntry.WAVELENGTH] = self._wavelength
         snapshot.update(self._pet.get_snapshot(SnapshotPrefix.PETALOMETER))
         return Snapshotable.prepend(prefix, snapshot)
 
@@ -73,22 +77,34 @@ class LongExposurePetalometer(Snapshotable):
               self._pet.phase_difference_map.shape[1])
         self._phase_diff = np.ma.zeros(sh)
         self._meas_petals = np.zeros((self._niter, 6))
+        self._phase_screen = np.ma.zeros(sh)
         self._pet.set_step_idx(0)
         for i in range(self._niter):
             print("step %d" % self._pet._step_idx)
             self._pet.sense_wavefront_jumps()
             self._meas_petals[self._pet._step_idx] = self._pet.error_petals
             self._phase_diff[self._pet._step_idx] = self._pet.phase_difference_map
+            self._phase_screen[self._pet._step_idx] = self._pet._model2.pupil_opd()
             self._pet.advance_step_idx()
 
     def phase_screen(self):
-        return self._aores.phase_screen
-
+        return self._phase_screen
+    
     def phase_screen_cumave(self):
-        return self._aores.phase_screen_cumave
-
+        self._phase_screen_cumave = self._cumaverage(self.phase_screen())
+        return self._phase_screen_cumave
+    
     def phase_screen_ave(self):
-        return self._aores.phase_screen_ave
+        return self.phase_screen().mean(axis=0)
+
+    # def phase_screen(self):
+    #     return self._aores.phase_screen
+    #
+    # def phase_screen_cumave(self):
+    #     return self._aores.phase_screen_cumave
+    #
+    # def phase_screen_ave(self):
+    #     return self._aores.phase_screen_ave
 
     def petals(self):
         if self._meas_petals_no_global_pist is None:
@@ -197,13 +213,23 @@ class LongExposurePetalometer(Snapshotable):
                      header=hdr, overwrite=True)
         fits.append(filename, self.phase_difference().mask.astype(int))
         fits.append(filename, self._meas_petals)
+        fits.append(filename, self.phase_screen().data)
+        fits.append(filename, self.phase_screen().mask.astype(int))
 
     @staticmethod
     def load(filename):
         hdr = fits.getheader(filename)
+        try:
+            wavelength = eval(
+                hdr['LPE.' + LepSnapshotEntry.WAVELENGTH].split()[0]) * u.m
+        except KeyError:
+            wavelength = 24e-6 * u.m
+        # TODO: fix wavelength
         soi = LongExposurePetalometer(
             hdr['LPE.' + LepSnapshotEntry.TRACKNUM],
             rot_angle=hdr['LPE.' + LepSnapshotEntry.ROT_ANGLE],
+            petals=hdr['LPE.' + LepSnapshotEntry.PETALS],
+            wavelength=wavelength,
             start_from_step=hdr['LPE.' + LepSnapshotEntry.STARTSTEP],
             n_iter=hdr['LPE.' + LepSnapshotEntry.NITER])
         soi._pixelsize = hdr['LPE.' + LepSnapshotEntry.PIXELSZ]
@@ -211,6 +237,9 @@ class LongExposurePetalometer(Snapshotable):
         res_map_m = fits.getdata(filename, 1).astype(bool)
         soi._phase_diff = np.ma.masked_array(data=res_map_d, mask=res_map_m)
         soi._meas_petals = fits.getdata(filename, 2)
+        phase_screen_d = fits.getdata(filename, 3)
+        phase_screen_m = fits.getdata(filename, 4)
+        soi._phase_screen = np.ma.masked_array(data=phase_screen_d, mask=phase_screen_m)
         return soi
 
     def plot_petals(self):
