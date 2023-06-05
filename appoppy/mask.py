@@ -20,7 +20,7 @@ def sector_mask(shape, angle_range, centre=None, radius=None):
     angle_range=(150, -150) raises ValueError
     """
 
-    x, y = np.ogrid[:shape[0], :shape[1]]
+    x, y = np.ogrid[:shape[0],:shape[1]]
     if centre is None:
         centre = (shape[0] / 2, shape[1] / 2)
     if radius is None:
@@ -30,9 +30,9 @@ def sector_mask(shape, angle_range, centre=None, radius=None):
 
     # ensure stop angle > start angle
     if tmax < tmin:
-        #tmax += 2 * np.pi
+        # tmax += 2 * np.pi
         raise ValueError(
-            "angle_range must be given in increasing order. Got %s" %
+            "angle_range must be given in increasing order. Got %s" % 
             str(angle_range))
 
     # convert cartesian --> polar coordinates
@@ -49,3 +49,12 @@ def sector_mask(shape, angle_range, centre=None, radius=None):
     anglemask = theta <= (tmax - tmin)
 
     return circmask * anglemask
+
+
+def mask_phase_screen(phase_screen, angle_range):
+    smask1 = sector_mask(phase_screen[0].shape,
+                        (angle_range[0], angle_range[1]))
+    mask = np.ma.mask_or(phase_screen[0].mask, ~smask1)
+    return np.ma.masked_array(
+        phase_screen, mask=np.broadcast_to(
+            mask, phase_screen.shape))
