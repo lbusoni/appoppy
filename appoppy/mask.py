@@ -52,9 +52,9 @@ def sector_mask(shape, angle_range, centre=None, radius=None):
 
 
 def mask_phase_screen(phase_screen, angle_range):
-    smask1 = sector_mask(phase_screen[0].shape,
+    smask1 = sector_mask(phase_screen.shape,
                         (angle_range[0], angle_range[1]))
-    mask = np.ma.mask_or(phase_screen[0].mask, ~smask1)
+    mask = np.ma.mask_or(phase_screen.mask, ~smask1)
     return np.ma.masked_array(
         phase_screen, mask=np.broadcast_to(
             mask, phase_screen.shape))

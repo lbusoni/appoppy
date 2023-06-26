@@ -27,6 +27,7 @@ class LongExposurePetalometer(Snapshotable):
                  rot_angle=10,
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  wavelength=2.2e-6 * u.m,
+                 lwe_speed=None,
                  jpeg_root_folder=None,
                  start_from_step=100,
                  n_iter=1000):
@@ -35,6 +36,7 @@ class LongExposurePetalometer(Snapshotable):
         self._rot_angle = rot_angle
         self._petals = petals
         self._wavelength = wavelength
+        self._lwe_speed = lwe_speed
         if jpeg_root_folder is None:
             home = str(Path.home())
             jpeg_root_folder = os.path.join(
@@ -48,7 +50,8 @@ class LongExposurePetalometer(Snapshotable):
         self._meas_petals_cumave = None
         self._pixelsize = None
         self._tracking_number = tracking_number
-        self._aores = AOResidual(self._tracking_number)
+        if self._tracking_number:
+            self._aores = AOResidual(self._tracking_number)
         self._pet = None
 
     def get_snapshot(self, prefix='LEP'):
@@ -66,6 +69,7 @@ class LongExposurePetalometer(Snapshotable):
     def run(self):
         self._pet = Petalometer(
             tracking_number=self._tracking_number,
+            lwe_speed=self._lwe_speed,
             petals=self._petals,
             residual_wavefront_start_from=self._start_from_step,
             rotation_angle=self._rot_angle,

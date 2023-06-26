@@ -12,7 +12,7 @@ class AOResidual():
         self._start_from = start_from
         resscreen, hdr = restore_residual_wavefront(tracking_number)
         self._pxscale = float(hdr['PIXELSCL'])
-        self._screens = resscreen[self._start_from:, :, :]
+        self._screens = resscreen[self._start_from:,:,:]
         self._shape = self._screens.shape
         self._spider_x_coord = 240
         self._valid_y_min = 20
@@ -40,7 +40,7 @@ class AOResidual():
         sep_px = round(0.5 * separation_in_meter / self._pxscale)
         idx_x = (self._spider_x_coord - sep_px, self._spider_x_coord + sep_px)
         two_cols = self._screens[np.ix_(np.arange(self._t_steps), rows, idx_x)]
-        return two_cols[:, :, 1] - two_cols[:, :, 0]
+        return two_cols[:,:, 1] - two_cols[:,:, 0]
 
     def _rfft(self, signal, dt):
         '''
@@ -61,7 +61,7 @@ class AOResidual():
                 raise Exception('masked signal. fft output is unreliable')
             signal = signal.filled()
         ft = np.fft.rfft(signal, norm='ortho', axis=0)
-        power_spectrum = np.mean(np.abs(ft**2), axis=1)
+        power_spectrum = np.mean(np.abs(ft ** 2), axis=1)
         frequencies = np.fft.rfftfreq(signal.shape[0], d=dt)
         return power_spectrum, frequencies
 
@@ -70,7 +70,7 @@ class AOResidual():
             a_moment = 500
         scr2 = np.roll(self._screens, sep_px, axis=2)
         dd = (self._screens[a_moment] - scr2[a_moment])[:, sep_px:]
-        return np.mean(dd**2)
+        return np.mean(dd ** 2)
 
     def structure_function(self, a_moment=500):
         '''
@@ -101,12 +101,13 @@ class AOResidual():
         plt.xlabel('Frequency [Hz]')
         plt.grid(True)
 
-    def plot_structure_function(self):
+    def plot_structure_function(self, a_moment_end=500):
         stf_rad2_0, stf_x = self.structure_function(a_moment=0)
-        stf_rad2_1, stf_x = self.structure_function(a_moment=500)
+        stf_rad2_1, stf_x = self.structure_function(a_moment=a_moment_end)
         plt.figure()
-        plt.semilogy(stf_x * self._pxscale, stf_rad2_0, label='t=0s')
-        plt.semilogy(stf_x * self._pxscale, stf_rad2_1, label='t=1s')
+        plt.semilogy(stf_x * self._pxscale, stf_rad2_0, label='t=0 s')
+        plt.semilogy(stf_x * self._pxscale, stf_rad2_1, label='t=%s s'
+                     % (self._dt * (self._screens.shape[0] + self._start_from)))
         plt.xlabel(r'separation $\rho$  [m]')
         plt.ylabel(r'$D_{\phi}$ of residual phase $[nm^2]$')
         plt.grid(True)

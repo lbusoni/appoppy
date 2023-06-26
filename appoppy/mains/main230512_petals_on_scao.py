@@ -100,3 +100,39 @@ class PetalsOnHIRESResiduals():
               % (petals_ao_on - petals_ao_off))
         return petals_ao_off, petals_ao_on
     
+
+def main230517_LWE_deltaOPD_estimation(wind_speed, rotation_angle):
+    '''
+    Estimate delta OPD across spiders introduced by LWE. Comparison with
+    Fig.11 in "D. Martins, R. Holzlöhner, C. Verinaud, C. Kleinklaus,
+    “Transient Wavefront Error from Cooled Air Downwind of Telescope
+    Spiders”, SPIE Montreal (2022)".
+    '''
+    pet = Petalometer(lwe_speed=wind_speed, rotation_angle=rotation_angle)
+    r = rotation_angle
+    angs = (90, 90 - r, 30, 30 - r, -30, -30 - r, -
+            90, -90 - r, -150, -150 - r, -210, -210 - r, -270)
+    ifms = [pet._mask_ifgram(pet._i4.interferogram(), (angs[i + 1], angs[i]))
+            for i in range(len(angs) - 1)]
+    plt.figure()
+    for i in range(6):
+        plt.imshow(ifms[::2][i], origin='lower')
+    plt.figure()
+    plt.plot(ifms[0][:, 131])
+    return pet, ifms
+
+
+def main230518_petals_estimation_with_Kolmogorov_turbulence(r0=0.1):
+    petals = [200, 30, -100, 370, 500, 0] * u.nm
+    ang_small = 15
+    ang_overlap = 60
+    pet_small = Petalometer(r0=r0, petals=petals, rotation_angle=ang_small)
+    plt.figure()
+    pet_overlap = Petalometer(r0=r0, petals=petals, rotation_angle=ang_overlap)
+    petals_small_angle = pet_small.estimated_petals
+    petals_overlap_angle = pet_overlap.estimated_petals
+    print('Petals estimation with rotation of %s: %s' % (ang_small,
+                                                     petals_small_angle))
+    print('Petals estimation with rotation of %s: %s' % (ang_overlap,
+                                                     petals_overlap_angle))
+    return pet_small, pet_overlap

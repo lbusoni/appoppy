@@ -76,7 +76,7 @@ class Gif2DMapsAnimator():
     def _animate(self, step=1, **kwargs):
         plt.close('all')
         for i in range(0, self._n_iter, step):
-            self.display_map(i, title='t=%4d' %
+            self.display_map(i, title='t=%4d' % 
                              (i * self._dt * 1000), **kwargs)
             plt.savefig(self._file_name(i))
             plt.close('all')

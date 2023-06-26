@@ -192,6 +192,9 @@ class LowWindEffectWavefront(ArrayOpticalElement):
     @property
     def shape(self):
         return self._lwe.opd_cube().shape
+    
+    def phase_screens(self):
+        return self._cube
 
     def set_step_idx(self, step_idx):
         self._step_idx = step_idx
