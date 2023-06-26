@@ -42,3 +42,19 @@ def main230623_long_exposure_MORFEO_residuals_and_LWE():
         wavelength=24e-6 * u.m)
     le.run()
     return le
+
+
+def main230626_long_exposure_MORFEO_residuals_and_LWE_1600():
+    le = LongExposurePetalometer(
+        tracking_number=TN_LWE, rot_angle=60,
+        wavelength=1.60e-6 * u.m)
+    le.run()
+    return le
+
+
+def main230626_long_exposure_MORFEO_residuals_and_LWE_1500():
+    le = LongExposurePetalometer(
+        tracking_number=TN_LWE, rot_angle=60,
+        wavelength=1.50e-6 * u.m)
+    le.run()
+    return le
