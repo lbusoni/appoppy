@@ -2,7 +2,7 @@ import numpy as np
 from appoppy.mains.main230519_petals_on_mcao import main230519_petalometer_on_MORFEO_residuals_with_LWE
 
 
-def fractional_fringe(x, wv):
+def fractional_wavelength(x, wv):
     return (x % wv) / wv
 
 
@@ -28,14 +28,29 @@ def main_dw3():
     wv1 = 1500
     wv2 = 1600
 
-    # the sensor measure the fractional fringe
-    ff1 = fractional_fringe(x, wv1)
-    ff2 = fractional_fringe(x, wv2)
+    # the sensor measure the opd in fraction of wavelength
+    ff1 = fractional_wavelength(x, wv1)
+    ff2 = fractional_wavelength(x, wv2)
 
     opd = dual_wavelength_3(ff1, ff2, wv1, wv2)
     import matplotlib.pyplot as plt
     plt.plot(x, opd)
     return opd
+
+
+def main_dw3_with_noise():
+    x = np.arange(-30000, 30000)
+    wv1 = 1500
+    wv2 = 1600
+    noise_sigma = 0.01  # lambda
+
+    ff1 = fractional_wavelength(x, wv1) + np.random.rand(len(x)) * noise_sigma
+    ff2 = fractional_wavelength(x, wv2) + np.random.rand(len(x)) * noise_sigma
+
+    opd = dual_wavelength_3(ff1, ff2, wv1, wv2)
+    import matplotlib.pyplot as plt
+    plt.plot(x, opd)
+    return opd, ff1, ff2, x
 
 
 def main_with_ciaciao_data():
