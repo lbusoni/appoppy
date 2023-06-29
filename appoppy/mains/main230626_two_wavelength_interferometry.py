@@ -1,50 +1,110 @@
 import numpy as np
-from appoppy.two_wavelength_interferometry import fractional_wavelength, twi1
+from appoppy.two_wavelength_interferometry import fractional_wavelength, twi1,\
+    twi2
+
+
+def _compute_measurements(opd, wv1, wv2, eps_m):
+    '''
+    The single wavelength sensor returns a measure
+    the `opd` in fraction of wavelength, i.e. (opd % wv) / wv
+
+    A gaussian noise of stdev eps_m is added to the measurement
+    '''
+    meas1 = fractional_wavelength(
+        opd, wv1) + np.random.randn(len(opd)) * eps_m
+    meas2 = fractional_wavelength(
+        opd, wv2) + np.random.randn(len(opd)) * eps_m
+    return meas1, meas2
+
+
+def _display_results(opd, opd_meas, unambiguous_range,
+                     algo, wv1, wv2, eps_r, eps_m):
+    nel2 = int(len(opd) / 2)
+    L2 = np.minimum(int(unambiguous_range / 2), nel2)
+    rmin, rmax = int(nel2 - 0.9 * L2), int(nel2 + 0.9 * L2)
+    err = opd_meas - opd
+    err_center_std = err[nel2 - 1000:nel2 + 1000].std()
+
+    import matplotlib.pyplot as plt
+    fig, ax1 = plt.subplots()
+    ax1.plot(opd, opd_meas, 'b.-', label='opd_meas')
+    ax1.set_xlabel('opd [nm]')
+    ax1.set_ylabel('measured opd [nm]', color='b')
+    ax1.tick_params('y', colors='b')
+
+    ax2 = ax1.twinx()
+    ax2.plot(opd[rmin:rmax], err[rmin:rmax], 'r-', label='error')
+    ax2.set_ylabel('error [nm]', color='r')
+    ax2.tick_params('y', colors='r')
+
+    lines = ax1.get_lines() + ax2.get_lines()
+    labels = [line.get_label() for line in lines]
+    ax1.legend(lines, labels, loc='best')
+    ax1.grid(True)
+
+    title_str0 = str(
+        "Algo %s. wv1/2 %g/%g. eps_r %g, eps_m %g\n" %
+        (algo, wv1, wv2, eps_r, eps_m))
+    title_str1 = str("unambiguous range %g\n" % unambiguous_range)
+    title_str2 = str("opd error (in the central 2000 points): %g rms" %
+                     err_center_std)
+    title = str(title_str0 + title_str1 + title_str2)
+    ax1.set_title(title)
+    print(title)
+
+
+def _generic_main(wv1=1500, wv2=1600,
+                  eps_m=0, eps_r=0,
+                  algo='twi1', opd_max=100000):
+    opd = np.arange(-opd_max, opd_max)
+
+    meas1, meas2 = _compute_measurements(opd, wv1, wv2, eps_m)
+
+    if algo == 'twi1':
+        opd_meas, ur = twi1(meas1, meas2, wv1, wv2)
+    elif algo == 'twi2':
+        opd_meas, ur = twi2(meas1, meas2, wv1, wv2, eps_r, eps_m)
+    else:
+        raise ValueError("Unknown algorithm %s" % algo)
+
+    _display_results(opd, opd_meas, ur, algo, wv1, wv2, eps_r, eps_m)
+    return opd_meas, opd
 
 
 def main_twi1():
-    x = np.arange(-30000, 30000)
-    wv1 = 1500
-    wv2 = 1600
-
-    # the sensor measure the opd in fraction of wavelength
-    meas1 = fractional_wavelength(x, wv1)
-    meas2 = fractional_wavelength(x, wv2)
-
-    opd = twi1(meas1, meas2, wv1, wv2)
-    import matplotlib.pyplot as plt
-    plt.plot(x, opd)
-    return opd
+    return _generic_main(wv1=1500, wv2=1600, algo='twi1', opd_max=30000)
 
 
-def main_twi1_with_noise(noise_lambda=0.01, wv1=1500, wv2=1600):
-    opd = np.arange(-30000, 30000)
+def main_twi2():
+    return _generic_main(wv1=1500, wv2=1600, algo='twi2', opd_max=30000)
 
-    # Assume the sensor measure opd as fractional wavelength
-    # i.e. (opd % wv) / wv
-    # Add guassian noise of noise_lambda rms
-    ff1 = fractional_wavelength(
-        opd, wv1) + np.random.randn(len(opd)) * noise_lambda
-    ff2 = fractional_wavelength(
-        opd, wv2) + np.random.randn(len(opd)) * noise_lambda
 
-    # retrieve opd estimate
-    opd_meas = twi1(ff1, ff2, wv1, wv2)
+def main_twi1_with_noise(eps_m=0.005):
+    return _generic_main(wv1=1500, wv2=1600, algo='twi1',
+                         opd_max=30000, eps_m=eps_m)
 
-    # display result
-    import matplotlib.pyplot as plt
-    plt.figure()
-    plt.plot(opd, opd_meas)
-    plt.xlabel('opd [nm]')
-    plt.ylabel('measured opd [nm]')
-    plt.figure()
-    plt.plot(opd[30000 - 12000:30000 + 12000],
-             (opd_meas - opd)[30000 - 12000:30000 + 12000])
-    plt.xlabel('opd [nm]')
-    plt.ylabel('error [nm]')
-    print("opd_meas error (in the central 2000 points): %g rms" %
-          (opd_meas - opd)[29000:31000].std())
-    return opd_meas, opd
+
+def main_twi2_with_noise(eps_m=0.005, eps_r=0):
+    return _generic_main(wv1=1500, wv2=1600, algo='twi2',
+                         opd_max=30000, eps_m=eps_m, eps_r=eps_r)
+
+
+def main_twi2_hene(eps_m=1e-4, eps_r=-1e-7):
+    return _generic_main(
+        wv1=604.613, wv2=632.816, opd_max=150000,
+        algo='twi2', eps_m=eps_m, eps_r=eps_r)
+
+
+def main_twi2_section_6(eps_m=0.005, eps_r=1e-4):
+    return _generic_main(
+        wv1=824, wv2=1332, opd_max=30000,
+        algo='twi2', eps_m=eps_m, eps_r=eps_r)
+
+
+def main_twi1_hene(eps_m=1e-4):
+    return _generic_main(
+        wv1=604.613, wv2=632.816, opd_max=150000,
+        algo='twi1', eps_m=eps_m)
 
 
 def main_twi1_with_ciaciao_data():
@@ -71,72 +131,3 @@ def main_twi1_with_ciaciao_data():
     plt.colorbar()
 
     return opd, le1500, le1600, le24
-
-
-def main_twi2_hene(p=343, q=350, k=157, eps_i=0.001):
-    opd = np.arange(-300000, 300000)
-    wv1 = 604.613
-    wv2 = 632.816
-
-    # p = 343
-    # q = 359
-    # k = 157
-    eps_r = 0  # -1.55e-6
-    # eps_i = 0.0001
-
-    meas1 = fractional_wavelength(
-        opd, wv1) + np.random.randn(len(opd)) * eps_i
-    meas2 = fractional_wavelength(
-        opd, wv2) + np.random.randn(len(opd)) * eps_i
-
-    def wrap(x):
-        return x - np.round(x)
-
-    def find_p_q(rl_hat):
-        q = np.arange(2, 1000)
-        p = np.round(rl_hat * q)
-        coprime_idx = np.nonzero(np.gcd(p.astype(int), q.astype(int)) == 1)
-        p = p[coprime_idx]
-        q = q[coprime_idx]
-        eps_f = rl_hat - p / q
-        return p, q, eps_f
-
-    def find_k(p, q):
-        k = np.zeros(q.shape)
-        for i in range(len(q)):
-            ks = np.arange(0, q[i])
-            k[i] = ks[np.nonzero(ks * p[i] % q[i] == 1)][0]
-        return k
-
-    def twi2(meas1, meas2, wv1, wv2, p, q, k, eps_r):
-        print("UR: %g" % (q * wv1))
-        rl = wv1 / wv2
-        rl_hat = rl + eps_r
-        m1barhat = q * wrap(k / q * np.round(q * (meas2 - rl_hat * meas1)))
-        opd = wv1 * (m1barhat + meas1)
-
-        eps_f = rl_hat - (p / q)
-        eps_margin = (1 - q**2 * (np.abs(eps_f) +
-                                  np.abs(eps_r))) / (2 * (p + q))
-        return opd, eps_f, eps_margin
-
-    res = twi2(meas1, meas2, wv1, wv2, p, q, k, eps_r)
-    opd_meas = res[0]
-
-    import matplotlib.pyplot as plt
-    plt.plot(opd, opd_meas)
-    return opd_meas, opd, res
-
-
-def main_twi1_hene():
-    opd = np.arange(-30000, 30000)
-    wv1 = 604.613
-    wv2 = 632.816
-
-    meas1 = fractional_wavelength(opd, wv1)
-    meas2 = fractional_wavelength(opd, wv2)
-
-    opd_meas = twi1(meas1, meas2, wv1, wv2)
-    import matplotlib.pyplot as plt
-    plt.plot(opd, opd_meas)
-    return opd_meas, opd
