@@ -22,7 +22,7 @@ class TwoWavelengthInterferometryTest(unittest.TestCase):
         meas1 = fractional_wavelength(opd, wv1)
         meas2 = fractional_wavelength(opd, wv2)
 
-        meas_opd = twi1(meas1, meas2, wv1, wv2)
+        meas_opd, _ = twi1(meas1, meas2, wv1, wv2)
 
         valid_opd_range = self.index_opd_within_synth_wv(opd, wv1, wv2)
         np.testing.assert_allclose(meas_opd[valid_opd_range],
