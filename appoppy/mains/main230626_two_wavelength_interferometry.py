@@ -6,9 +6,12 @@ from appoppy.two_wavelength_interferometry import fractional_wavelength, twi1,\
 def _compute_measurements(opd, wv1, wv2, eps_m):
     '''
     The single wavelength sensor returns a measure
-    the `opd` in fraction of wavelength, i.e. (opd % wv) / wv
+    of the `opd` as a fraction of the actual wavelength, i.e. (opd % wv) / wv
 
-    A gaussian noise of stdev eps_m is added to the measurement
+    The actual wavelength can differ from the nominal wavelength (e.g. because
+    of a calibration error in the band-pass filter of the sensor)
+
+    A gaussian random noise of stdev eps_m is added to the measurement
     '''
     meas1 = fractional_wavelength(
         opd, wv1) + np.random.randn(len(opd)) * eps_m
@@ -57,6 +60,8 @@ def _generic_main(wv1=1500, wv2=1600,
                   eps_m=0, eps_r=0,
                   algo='twi1', opd_max=100000):
     opd = np.arange(-opd_max, opd_max)
+
+    eps_l = eps_r / 2
 
     meas1, meas2 = _compute_measurements(opd, wv1, wv2, eps_m)
 

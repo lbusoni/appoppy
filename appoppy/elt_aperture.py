@@ -9,6 +9,8 @@ PUPIL_MASK_480 = 'EELT480pp0.0813spider.fits'
 PUPIL_MASK_480_PHASE_B = 'EELT480pp0.0813spiderRoundObs.fits'
 PUPIL_MASK_480_PHASE_C = 'EELT480pp0.0813spiderRoundObsCentered.fits'
 PUPIL_MASK_512 = 'EELT512pp0.0762nogapRoundObs.fits'
+PUPIL_MASK_480_PHASE_C_SPIDER23 = 'EELT480pp0.0803m_obs0.283_spider2023.fits'
+PUPIL_MASK_480_PHASE_C_SPIDER23_HIRES = 'EELT480pp0.0803m_obs0.283_spider2023.fits'
 
 
 def restore_elt_pupil_mask(pupil_mask_tag):
@@ -19,7 +21,8 @@ def restore_elt_pupil_mask(pupil_mask_tag):
     mask = fits.getdata(fname)
     maskb = (mask == False)
     maski = maskb.astype(int)
-    # it should be read from params.txt MAIN PIXEL_PITCH
+    # pixel_pitch must be read from params.txt MAIN PIXEL_PITCH
+    # rotation: such that a spider is pointing N (with pixel 0,0 at the SW corner)
     if pupil_mask_tag == PUPIL_MASK_480:
         pixel_pitch = 0.08215
         rotation = 0
@@ -32,6 +35,12 @@ def restore_elt_pupil_mask(pupil_mask_tag):
     elif pupil_mask_tag == PUPIL_MASK_512:
         pixel_pitch = 0.076171875
         rotation = 15
+    elif pupil_mask_tag == PUPIL_MASK_480_PHASE_C_SPIDER23:
+        pixel_pitch = 0.080208331
+        rotation = 0
+    elif pupil_mask_tag == PUPIL_MASK_480_PHASE_C_SPIDER23_HIRES:
+        pixel_pitch = 0.081249997
+        rotation = 0
     else:
         raise ValueError('Unknown pupilstop %s' % pupil_mask_tag)
     hdr = fits.Header()

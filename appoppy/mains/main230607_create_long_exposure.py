@@ -3,6 +3,7 @@ import astropy.units as u
 from appoppy.long_exposure import LongExposurePetalometer
 
 ROOT_DIR = '/Users/giuliacarla/Documents/INAF/Lavoro/Progetti/MORFEO/Petalometer/CiaoCiaoWFS/analysis/data/from_appoppy/'
+ROOT_DIR = '/Users/lbusoni/Library/CloudStorage/GoogleDrive-lorenzo.busoni@inaf.it/Il mio Drive/adopt/Varie/CiaoCiaoWFS/analysis/data/from_appoppy/'
 
 TN_LWE = '20230517_160708.0_coo0.0_0.0'
 TN_P10 = '20210512_081313.0_coo'
