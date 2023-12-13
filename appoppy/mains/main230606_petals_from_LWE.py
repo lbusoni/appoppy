@@ -64,7 +64,7 @@ def main230606_LWE_maps_temporal_mean_and_std_on_sectors():
         stds.append(np.ma.std(masks, axis=(1, 2)))
     plt.figure()
     for i in range(sectors):
-        plt.plot(times, means[i], label='S%s' % i)
+        plt.plot(times, means[i], label='S%s' % (i + 1))
     plt.xlabel('Time [s]')
     plt.ylabel('Average OPD [um]')
     plt.legend()

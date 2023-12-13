@@ -59,3 +59,12 @@ def main230626_long_exposure_MORFEO_residuals_and_LWE_1500():
         wavelength=1.50e-6 * u.m)
     le.run()
     return le
+
+
+def main230627_long_exposure_MORFEO_residuals_and_one_petals():
+    le = LongExposurePetalometer(
+        tracking_number='20210511_144618.0_coo0.0_0.0', rot_angle=60,
+        petals=np.array([800, 0, 0, 0, 0, 0]) * u.nm,
+        wavelength=2.2e-6 * u.m)
+    le.run()
+    return le

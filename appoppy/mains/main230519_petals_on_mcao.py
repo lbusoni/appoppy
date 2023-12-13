@@ -220,13 +220,14 @@ def main230623_MORFEO_residuals_with_LWE_characterization():
     print('RMS [nm]: %s' % np.mean(ps.std(axis=(1, 2))))
     dir_path = '/Users/giuliacarla/Documents/INAF/Lavoro/Progetti/MORFEO/Petalometer/CiaoCiaoWFS/analysis/animations/20230517_160708.0_coo0.0_0.0_24um_60deg'
     gf = Gif2DMapsAnimator(
-        os.path.join(dir_path, 'phase_screen_2'), ps, deltat=aores.time_step,
+        os.path.join(dir_path, 'phase_screen'), ps, deltat=aores.time_step,
         pixelsize=aores._pxscale,
         vminmax=(-4500, 4500))
     gf.make_gif()
     gf = Gif2DMapsAnimator(
-        os.path.join(dir_path, 'phase_screen_cum_2'), ps_cumave,
-        deltat=aores.time_step, vminmax=(-3500, 3500))
+        os.path.join(dir_path, 'phase_screen_cum'), ps_cumave,
+        deltat=aores.time_step,
+        pixelsize=aores._pxscale, vminmax=(-3500, 3500))
     gf.make_gif()
     plt.imshow(ps_cumave[-1], origin='lower', vmin=-3500, vmax=3500,
                cmap='twilight')
@@ -270,14 +271,14 @@ def main230625_100_petals_realization_on_MORFEO_residuals_P50_analysis():
     pet_in = fits.getdata(os.path.join(dirpath, 'input_petals.fits'))
     pet_out = fits.getdata(os.path.join(dirpath, 'output_petals.fits'))
     errors = np.array([
-        abs(pet_out[i] - pet_in[i]) / pet_in[i] for i in range(
+        abs(pet_out[i] - pet_in[i]) for i in range(
             pet_in.shape[0])])
     pet_in_flat = pet_in.flatten()
     idcs = np.argsort(pet_in_flat)
     plt.figure()
     plt.plot(pet_in_flat[idcs], errors.flatten()[idcs])
     plt.axvline(std_ao_100frame, linestyle=':', label='AO residual RMS')
-    plt.ylabel('Relative error [%]')
+    plt.ylabel('Error [nm]')
     plt.xlabel('Input piston [nm]')
     plt.grid()
     plt.legend()
@@ -312,4 +313,187 @@ def main230625_100_petals_realization_on_MORFEO_residuals_P50_long_exp(
         jumps_output.append(est_jumps)
 
     return petals_input, petals_output, jumps_output
+
+
+def main230627_petalometer_on_MORFEO_residuals_with_petals_in_Ks():
+    '''
+    Measure and compensate for petals on MORFEO residuals that include injected
+    pistons. Sensing wavelength is 2.2 um.
+    '''
+    le_pet = LongExposurePetalometer.load(
+        os.path.join(
+            ROOT_DIR, TN_P50 + '0.0_0.0',
+            'long_exp_2.2um_60deg_pet_200_30_m100_370_500_0.fits'))
+    true_petals = [200, 30, -100, 370, 500, 0] * u.nm
+    le = LongExposurePetalometer.load(
+        os.path.join(
+            ROOT_DIR, TN_P50 + '0.0_0.0',
+            'long_exp_2.2um_60deg.fits'))
+    _, jumps_res = le.petals_from_phase_difference_ave()
+    _, jumps_pet = le_pet.petals_from_phase_difference_ave()
+    petals_res = -1 * np.cumsum(jumps_res[::2])
+    petals_pet = -1 * np.cumsum(jumps_pet[::2])
+    meas_pet = np.array(petals_pet) - np.array(petals_res) 
+    print(meas_pet)
+    print(true_petals)
+    print('Error: %s' % (true_petals.value - meas_pet))
+    print('Error std: %s' % (true_petals.value - meas_pet).std())
+    return true_petals, meas_pet, jumps_res, jumps_pet, petals_res, petals_pet
+
+
+def main230627_correction_on_MORFEO_residuals_with_petals_in_Ks():
+    '''
+    '''
+    le = LongExposurePetalometer.load(
+        os.path.join(
+            ROOT_DIR, TN_P50 + '0.0_0.0',
+            'long_exp_2.2um_60deg_pet_200_30_m100_370_500_0.fits'))
+    phase_screens = le.phase_screen()[100:]
+    phase_correction = np.tile(
+        le.phase_correction_from_petalometer(), (phase_screens.shape[0], 1, 1))
+    phase_screens_res = phase_screens - phase_correction
+    std_res = phase_screens.std(axis=(1, 2))
+    std_res_lwe = phase_screens_res.std(axis=(1, 2))
+    petals, jumps = le.petals_from_phase_difference_ave()
+    plt.figure()
+    plt.plot(std_res, label='Petalometer OFF')
+    plt.plot(std_res_lwe, label='Petalometer ON')
+    plt.legend()
+    plt.grid()
+    plt.ylabel('Std [nm]')
+    plt.xlabel('Step number')
+    print('\n\nMean of MORFEO residuals stds: %s' % std_res.mean())
+    print(
+        '\nMean of MORFEO residuals (with petalometer correction) stds: %s' 
+        % std_res_lwe.mean())
+    print('\nMeasured petals: %s' % petals)
+    print('\nMeasured jumps: %s' % jumps[::2])
+    return le, phase_correction, std_res, std_res_lwe
+
+
+def main230627_petalometer_on_MORFEO_residuals_with_small_petals_in_Ks():
+    '''
+    Measure and compensate for petals on MORFEO residuals that include injected
+    pistons. Sensing wavelength is 2.2 um.
+    '''
+    le_pet = LongExposurePetalometer.load(
+        os.path.join(
+            ROOT_DIR, TN_P50 + '0.0_0.0',
+            'long_exp_2.2um_60deg_pet_50_30_m15_70_100_0.fits'))
+    true_petals = [50, 30, -15, 70, 100, 0] * u.nm
+    le = LongExposurePetalometer.load(
+        os.path.join(
+            ROOT_DIR, TN_P50 + '0.0_0.0',
+            'long_exp_2.2um_60deg.fits'))
+    _, jumps_res = le.petals_from_phase_difference_ave()
+    _, jumps_pet = le_pet.petals_from_phase_difference_ave()
+    petals_res = -1 * np.cumsum(jumps_res[::2])
+    petals_pet = -1 * np.cumsum(jumps_pet[::2])
+    meas_pet = np.array(petals_pet) - np.array(petals_res) 
+    print(meas_pet)
+    print(true_petals)
+    print('Error: %s' % (true_petals.value - meas_pet))
+    print('Error std: %s' % (true_petals.value - meas_pet).std())
+    return true_petals, meas_pet, jumps_res, jumps_pet, petals_res, petals_pet
+
+
+def main230627_petalometer_on_MORFEO_residuals_with_LWE_dual_wavelength():
+    '''
+    Measure and compensate for petals on MORFEO residuals that include LWE and
+    its correction.
+    '''
+    rot_angle = 60
+    le_24um = LongExposurePetalometer.load(
+        os.path.join(
+            ROOT_DIR, TN_LWE,
+            'long_exp_%sum_%sdeg.fits' % (24, rot_angle)))
+    le_1_5um = LongExposurePetalometer.load(
+        os.path.join(
+            ROOT_DIR, TN_LWE,
+            'long_exp_%sum_%sdeg.fits' % (1.5, rot_angle)))
+    le_1_6um = LongExposurePetalometer.load(
+        os.path.join(
+            ROOT_DIR, TN_LWE,
+            'long_exp_%sum_%sdeg.fits' % (1.6, rot_angle)))
+    # phase_screens = le.phase_screen()[100:]
+    # phase_correction = np.tile(
+    #     le.phase_correction_from_petalometer(), (phase_screens.shape[0], 1, 1))
+    # phase_screens_res = phase_screens - phase_correction
+    # std_res = phase_screens.std(axis=(1, 2))
+    # std_res_lwe = phase_screens_res.std(axis=(1, 2))
+    petals_24um, jumps_24um = le_24um.petals_from_phase_difference_ave()
+    petals_1_5um, jumps_1_5um = le_1_5um.petals_from_phase_difference_ave()
+    petals_1_6um, jumps_1_6um = le_1_6um.petals_from_phase_difference_ave()
     
+    return le_24um, petals_24um, petals_1_5um, petals_1_6um
+
+
+def main230627_test_capture_range():
+    wv = 2.2e-6 * u.m
+    true_petals = [-1500, -1100, -500, 500, 1100, 1500]
+    est_petals = []
+    for p in true_petals:
+        pet = Petalometer(petals=[p, 0, 0, 0, 0, 0] * u.nm,
+                          rotation_angle=60,
+                          wavelength=wv,
+                          should_display=False)
+        est_pet = pet.estimated_petals
+        est_petals.append(est_pet[0].value)
+    plt.figure()
+    plt.plot(true_petals, est_petals, '.-')
+    return true_petals, est_petals
+
+
+def main230627_test_one_petals_on_one_MORFEO_frame(rot_angle=60):
+    wv = 2.2e-6 * u.m
+    true_petals = [500, 0, 0, 0, 0, 0]
+    pet_res = Petalometer(tracking_number=TN_P50 + '0.0_0.0',
+                      rotation_angle=rot_angle,
+                      wavelength=wv,
+                      should_display=True)
+    plt.figure()
+    pet_res_pet = Petalometer(tracking_number=TN_P50 + '0.0_0.0',
+                          petals=true_petals * u.nm,
+                          rotation_angle=rot_angle,
+                          wavelength=wv,
+                          should_display=True)
+    print(pet_res_pet.estimated_petals - pet_res.estimated_petals)
+    return pet_res, pet_res_pet
+
+
+def main230627_petalometer_on_MORFEO_residuals_with_one_500nm_petals_in_Ks():
+    '''
+    Measure and compensate for petals on MORFEO residuals that include one
+    injected pistons. Sensing wavelength is 2.2 um.
+    '''
+    le500 = LongExposurePetalometer.load(
+        os.path.join(
+            ROOT_DIR, TN_P50 + '0.0_0.0',
+            'long_exp_2.2um_60deg_pet_500_0_0_0_0_0.fits'))
+    le = LongExposurePetalometer.load(
+        os.path.join(
+            ROOT_DIR, TN_P50 + '0.0_0.0',
+            'long_exp_2.2um_60deg.fits'))
+    petals_res, jumps_res = le.petals_from_phase_difference_ave()
+    petals_500, jumps_500 = le500.petals_from_phase_difference_ave()
+    print(np.array(petals_500) - np.array(petals_res))
+    return jumps_res, jumps_500, petals_res, petals_500
+
+
+def main230627_petalometer_on_MORFEO_residuals_with_one_800nm_petals_in_Ks():
+    '''
+    Measure and compensate for petals on MORFEO residuals that include one
+    injected pistons. Sensing wavelength is 2.2 um.
+    '''
+    le800 = LongExposurePetalometer.load(
+        os.path.join(
+            ROOT_DIR, TN_P50 + '0.0_0.0',
+            'long_exp_2.2um_60deg_pet_800_0_0_0_0_0.fits'))
+    le = LongExposurePetalometer.load(
+        os.path.join(
+            ROOT_DIR, TN_P50 + '0.0_0.0',
+            'long_exp_2.2um_60deg.fits'))
+    petals_res, jumps_res = le.petals_from_phase_difference_ave()
+    petals_800, jumps_800 = le800.petals_from_phase_difference_ave()
+    print(np.array(petals_800) - np.array(petals_res))
+    return jumps_res, jumps_800, petals_res, petals_800
