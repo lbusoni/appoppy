@@ -68,3 +68,22 @@ def main230627_long_exposure_MORFEO_residuals_and_one_petals():
         wavelength=2.2e-6 * u.m)
     le.run()
     return le
+
+
+def main231213_long_exposure_MORFEO_residuals_no_petals(
+        wavelength=2.2e-6 * u.m):
+    le = LongExposurePetalometer(
+        tracking_number='20231209_202232.0_coo55.0_0.0', rot_angle=60,
+        wavelength=wavelength)
+    le.run()
+    return le
+
+
+def main231213_long_exposure_MORFEO_residuals_one_100nm_piston(
+        wavelength=2.2e-6 * u.m):
+    le = LongExposurePetalometer(
+        tracking_number='20231209_202232.0_coo55.0_0.0', rot_angle=60,
+        petals=np.array([0, 0, 0, 0, 100, 0]) * u.nm,
+        wavelength=wavelength)
+    le.run()
+    return le
