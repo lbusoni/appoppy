@@ -252,9 +252,12 @@ class LongExposurePetalometer(Snapshotable):
                       self._aores.time_step)
 
         dd = self.petals()
-        plt.plot(t, dd)
-        plt.ylabel("petals [nm]")
-        plt.xlabel("time [s]")
+        plt.figure()
+        plt.plot(t, dd, label=['Segment %s' % i for i in range(6)])
+        plt.legend()
+        plt.grid()
+        plt.ylabel("Estimated piston [nm]")
+        plt.xlabel("Time [s]")
         print("mean %s" % str(dd.mean(axis=0)))
         print("std  %s" % str(dd.std(axis=0)))
 
