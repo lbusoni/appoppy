@@ -152,6 +152,18 @@ class Petalometer(Snapshotable):
 
     @property
     def petals(self):
+        '''
+        Return M4 petals in nm
+        
+        The array corresponds to the one set via set_m4_petals().
+        It doesn't account for any other possible petaling included
+        e.g. in the atmospheric residuals or LWE. 
+
+        Returns
+        ----------
+        petals: astropy.quantity equivalent to u.nm of shape (6,)
+            petals applied on M4
+        '''
         return self._petals.to(u.nm)
 
     def sense_wavefront_jumps(self):
@@ -186,8 +198,17 @@ class Petalometer(Snapshotable):
 
     @property
     def error_petals(self):
-        # return difference(self.estimated_petals, self.petals,
-        # self.wavelength)
+        '''
+        Petal estimate error
+        
+        Difference between the measured petals and the actual petals set with set_m4_petals
+        Possible petals from the atmospheric residuals are not accounted here
+        
+        Returns
+        -------
+        error_petals: numpy array (6)
+            difference between measured petals and actual petals [nm]
+        '''
         diff = self.estimated_petals - self.petals
         return diff - diff[0]
 

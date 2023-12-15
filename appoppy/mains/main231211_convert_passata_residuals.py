@@ -44,19 +44,30 @@ def convert_passata_residual_example():
 
 
 def convert_residual_for_morfeo_analysis():
-   psc = PASSATASimulationConverter()
-   psc.convert_from_fits_data(
-       '20231209_202232.0', '55.0', '0.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
-   psc.convert_from_fits_data(
-       '20231209_202232.0', '55.0', '120.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
-   psc.convert_from_fits_data(
-       '20231209_202232.0', '55.0', '240.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
-   psc.convert_from_fits_data(
-       '20231209_232208.0', '0.0', '0.0', PUPIL_MASK_480_PHASE_C_SPIDER23_HIRES, 0.002)
+    psc = PASSATASimulationConverter()
+    psc.convert_from_fits_data(
+        '20231209_202232.0', '55.0', '0.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
+    psc.convert_from_fits_data(
+        '20231209_202232.0', '55.0', '120.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
+    psc.convert_from_fits_data(
+        '20231209_202232.0', '55.0', '240.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
+    psc.convert_from_fits_data(
+        '20231209_232208.0', '0.0', '0.0', PUPIL_MASK_480_PHASE_C_SPIDER23_HIRES, 0.002)
 
-   psc.convert_from_fits_data(
-       '20231209_202232.0', '55.0', '0.0DAO', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
-   psc.convert_from_fits_data(
-       '20231209_202232.0', '55.0', '120.0DAO', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
-   psc.convert_from_fits_data(
-       '20231209_202232.0', '55.0', '240.0DAO', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
+    psc.convert_from_fits_data(
+        '20231209_202232.0', '55.0', '0.0DAO', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
+    psc.convert_from_fits_data(
+        '20231209_202232.0', '55.0', '120.0DAO', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
+    psc.convert_from_fits_data(
+        '20231209_202232.0', '55.0', '240.0DAO', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
+
+    psc.convert_from_fits_data(
+        '20231213_101833.0', '0.0', '0.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
+    psc.convert_from_fits_data(
+        '20231212_212912.0', '0.0', '0.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
+    psc.convert_from_fits_data(
+        '20231213_123051.0', '0.0', '0.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
+    psc.convert_from_fits_data(
+        '20231213_123200.0', '0.0', '0.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
+    psc.convert_from_fits_data(
+        '20231213_123403.0', '0.0', '0.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)

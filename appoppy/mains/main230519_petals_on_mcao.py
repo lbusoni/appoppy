@@ -9,6 +9,7 @@ from appoppy.gif_animator import Gif2DMapsAnimator
 from astropy.io import fits
 
 ROOT_DIR = '/Users/giuliacarla/Documents/INAF/Lavoro/Progetti/MORFEO/Petalometer/CiaoCiaoWFS/analysis/data/from_appoppy/'
+ROOT_DIR = '/Users/lbusoni/Library/CloudStorage/GoogleDrive-lorenzo.busoni@inaf.it/Drive condivisi/MORFEO-OAA/Petalometro Ciao Ciao/analysis/data/from_appoppy'
 
 TN_LWE = '20230517_160708.0_coo0.0_0.0'
 TN_P10 = '20210512_081313.0_coo'

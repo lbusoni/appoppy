@@ -62,7 +62,7 @@ class LongExposurePetalometer(Snapshotable):
         snapshot[LepSnapshotEntry.PIXELSZ] = self._pixelsize
         snapshot[LepSnapshotEntry.STARTSTEP] = self._start_from_step
         snapshot[LepSnapshotEntry.PETALS] = self._petals
-        snapshot[LepSnapshotEntry.WAVELENGTH] = self._wavelength
+        snapshot[LepSnapshotEntry.WAVELENGTH] = self._wavelength.to_value(u.m)
         snapshot.update(self._pet.get_snapshot(SnapshotPrefix.PETALOMETER))
         return Snapshotable.prepend(prefix, snapshot)
 
@@ -92,6 +92,25 @@ class LongExposurePetalometer(Snapshotable):
             self._pet.advance_step_idx()
 
     def phase_screen(self):
+        '''
+        Phase screens
+        
+        It returns a cube of frames where the i-th frame corresponds to
+        the Optical Path Difference map of the i-th temporal step
+
+        The OPD is obtained as sum of the aberration contributed by any
+        optical element in the system (atmospheric turbulence/AO residual,
+        low-wind-effect, M4 petals, Zernike aberration)  
+        
+        It is not guaranteed that each screen has null global piston, i.e.
+        phase_screen.mean(axis=(1,2)) != 0
+
+        Returns
+        -------
+        phase_screen: numpy array (n_iter, n_pixel, n_pixel)
+            pupil opd [nm]
+        
+        '''
         return self._phase_screen
     
     def phase_screen_cumave(self):
@@ -111,6 +130,20 @@ class LongExposurePetalometer(Snapshotable):
     #     return self._aores.phase_screen_ave
 
     def petals(self):
+        '''
+        Petals
+        
+        Returns petals measured at every temporal step
+        The global piston is removed, i.e. mean(petals, axis=1) == 0 
+        
+        ! It is the petal error, i.e. the difference between the petals set and the measured ones.
+        
+        Returns
+        -------
+        petals: numpy array (n_iter, 6)
+            measured petals as a function of time [nm]
+
+        '''
         if self._meas_petals_no_global_pist is None:
             self._meas_petals_no_global_pist = self._meas_petals - np.broadcast_to(
                 self._meas_petals.mean(axis=1), (6, self._niter)).T
@@ -128,6 +161,11 @@ class LongExposurePetalometer(Snapshotable):
         It returns a cube of frames where the i-th frame corresponds to
          the phase difference estimated from the short exposure at the i-th
          temporal step
+
+        The phase difference map is the interferogram of the Rotational
+        Shearing Interferometer, so every point of the map contains the
+        measured phase difference of the two subapertures overlapped by the
+        RSI  
 
         Returns
         -------
@@ -224,8 +262,11 @@ class LongExposurePetalometer(Snapshotable):
     def load(filename):
         hdr = fits.getheader(filename)
         try:
-            wavelength = eval(
-                hdr['LPE.' + LepSnapshotEntry.WAVELENGTH].split()[0]) * u.m
+            res = hdr['LPE.' + LepSnapshotEntry.WAVELENGTH]
+            if isinstance(res, str):
+                wavelength = eval(res.split()[0]) * u.m
+            else:
+                wavelength = res * u.m
         except KeyError:
             wavelength = 24e-6 * u.m
         # TODO: fix wavelength
@@ -285,3 +326,7 @@ class LongExposurePetalometer(Snapshotable):
     def phase_screen_petal_corrected(self):
         return self.phase_screen_ave() - \
             self.phase_correction_from_petalometer()
+
+    @property
+    def rot_angle(self):
+        return self._rot_angle
