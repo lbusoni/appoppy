@@ -14,6 +14,7 @@ class LepSnapshotEntry(object):
     NITER = 'NITER'
     ROT_ANGLE = 'ROTANG'
     TRACKNUM = 'TRACKNUM'
+    LPE_TRACKNUM = 'LPE_TRACKNUM'
     PIXELSZ = 'PIXELSZ'
     STARTSTEP = 'STARTSTEP'
     PETALS = 'PETALS'
@@ -23,7 +24,8 @@ class LepSnapshotEntry(object):
 class LongExposurePetalometer(Snapshotable):
 
     def __init__(self,
-                 tracking_number,
+                 lpe_tracking_number,
+                 passata_tracking_number,
                  rot_angle=10,
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  wavelength=2.2e-6 * u.m,
@@ -41,7 +43,7 @@ class LongExposurePetalometer(Snapshotable):
             home = str(Path.home())
             jpeg_root_folder = os.path.join(
                 home, 'appoppy_anim',
-                tracking_number if tracking_number else "none")
+                lpe_tracking_number if lpe_tracking_number else "none")
         self._jpg_root = jpeg_root_folder
         self._phase_diff_cumave = None
         self._phase_diff = None
@@ -49,26 +51,16 @@ class LongExposurePetalometer(Snapshotable):
         self._meas_petals_no_global_pist = None
         self._meas_petals_cumave = None
         self._pixelsize = None
-        self._tracking_number = tracking_number
-        if self._tracking_number:
-            self._aores = AOResidual(self._tracking_number)
+        self._lpe_tracking_number = lpe_tracking_number
+        self._passata_tracking_number = passata_tracking_number
+        if self._passata_tracking_number:
+            self._aores = AOResidual(self._passata_tracking_number)
         self._pet = None
 
-    def get_snapshot(self, prefix='LEP'):
-        snapshot = {}
-        snapshot[LepSnapshotEntry.NITER] = self._niter
-        snapshot[LepSnapshotEntry.ROT_ANGLE] = self._rot_angle
-        snapshot[LepSnapshotEntry.TRACKNUM] = self._tracking_number
-        snapshot[LepSnapshotEntry.PIXELSZ] = self._pixelsize
-        snapshot[LepSnapshotEntry.STARTSTEP] = self._start_from_step
-        snapshot[LepSnapshotEntry.PETALS] = self._petals
-        snapshot[LepSnapshotEntry.WAVELENGTH] = self._wavelength.to_value(u.m)
-        snapshot.update(self._pet.get_snapshot(SnapshotPrefix.PETALOMETER))
-        return Snapshotable.prepend(prefix, snapshot)
 
     def run(self):
         self._pet = Petalometer(
-            tracking_number=self._tracking_number,
+            tracking_number=self._passata_tracking_number,
             lwe_speed=self._lwe_speed,
             petals=self._petals,
             residual_wavefront_start_from=self._start_from_step,
@@ -215,37 +207,41 @@ class LongExposurePetalometer(Snapshotable):
     # def display_phase_difference_std(self):
     #     self.display_map(self.phase_difference().std(axis=0))
 
-    def animate_phase_difference(self, vminmax=(-1100, 1100)):
+    def _animate_generic(self, what, label, step, cmap='twilight', **kwargs):
         Gif2DMapsAnimator(
-            os.path.join(self._jpg_root, 'phase_difference'),
-            self.phase_difference(),
+            os.path.join(self._jpg_root, label),
+            what,
             deltat=self._aores.time_step,
-            pixelsize=self._pixelsize,
-            vminmax=vminmax).make_gif(step=20)
+            pixelsize=self._pixelsize, **kwargs).make_gif(step=step, cmap=cmap)
 
-    def animate_phase_difference_cumulative_average(self, vminmax=(-1100, 1100)):
-        Gif2DMapsAnimator(
-            os.path.join(self._jpg_root, 'phase_difference_cum'),
-            self.phase_difference_cumave(),
-            deltat=self._aores.time_step,
-            pixelsize=self._pixelsize,
-            vminmax=vminmax).make_gif(step=20)
+    def animate_phase_difference(self, vminmax=(-1100, 1100), remove_jpg=True):
+        self._animate_generic(self.phase_difference(), 'phase_difference', 20,
+                              vminmax=vminmax, remove_jpg=remove_jpg)
 
-    def animate_phase_screens_cumulative_average(self, vminmax=(-300, 300)):
-        Gif2DMapsAnimator(
-            os.path.join(self._jpg_root, 'phase_screen_cum'),
-            self.phase_screen_cumave(),
-            deltat=self._aores.time_step,
-            pixelsize=self._pixelsize,
-            vminmax=vminmax).make_gif(step=10, cmap='cividis')
+    def animate_phase_difference_cumulative_average(self, vminmax=(-1100, 1100), remove_jpg=True):
+        self._animate_generic(self.phase_difference_cumave(), 'phase_difference_cum', 20,
+                              vminmax=vminmax, remove_jpg=remove_jpg)
 
-    def animate_phase_screens(self, vminmax=(-300, 300)):
-        Gif2DMapsAnimator(
-            os.path.join(self._jpg_root, 'phase_screen'),
-            self.phase_screen(),
-            deltat=self._aores.time_step,
-            pixelsize=self._pixelsize,
-            vminmax=vminmax).make_gif(step=10, cmap='cividis')
+    def animate_phase_screens_cumulative_average(self, vminmax=(-300, 300), remove_jpg=True):
+        self._animate_generic(self.phase_screen_cumave(), 'phase_screen_cum', 10,
+                              cmap='cividis', vminmax=vminmax, remove_jpg=remove_jpg)
+
+    def animate_phase_screens(self, vminmax=(-300, 300), remove_jpg=True):
+        self._animate_generic(self.phase_screen(), 'phase_screen', 10,
+                              cmap='cividis', vminmax=vminmax, remove_jpg=remove_jpg)
+
+    def get_snapshot(self, prefix='LEP'):
+        snapshot = {}
+        snapshot[LepSnapshotEntry.NITER] = self._niter
+        snapshot[LepSnapshotEntry.ROT_ANGLE] = self._rot_angle
+        snapshot[LepSnapshotEntry.TRACKNUM] = self._passata_tracking_number
+        snapshot[LepSnapshotEntry.LPE_TRACKNUM] = self._lpe_tracking_number
+        snapshot[LepSnapshotEntry.PIXELSZ] = self._pixelsize
+        snapshot[LepSnapshotEntry.STARTSTEP] = self._start_from_step
+        snapshot[LepSnapshotEntry.PETALS] = self._petals
+        snapshot[LepSnapshotEntry.WAVELENGTH] = self._wavelength.to_value(u.m)
+        snapshot.update(self._pet.get_snapshot(SnapshotPrefix.PETALOMETER))
+        return Snapshotable.prepend(prefix, snapshot)
 
     def save(self, filename):
         rootpath = Path(filename).parent.absolute()
@@ -271,7 +267,8 @@ class LongExposurePetalometer(Snapshotable):
             wavelength = 24e-6 * u.m
         # TODO: fix wavelength
         soi = LongExposurePetalometer(
-            hdr['LPE.' + LepSnapshotEntry.TRACKNUM],
+            hdr['LPE.' + LepSnapshotEntry.LPE_TRACKNUM],
+            passata_tracking_number=hdr['LPE.' + LepSnapshotEntry.TRACKNUM],
             rot_angle=hdr['LPE.' + LepSnapshotEntry.ROT_ANGLE],
             petals=hdr['LPE.' + LepSnapshotEntry.PETALS],
             wavelength=wavelength,
@@ -324,9 +321,12 @@ class LongExposurePetalometer(Snapshotable):
         return opd
 
     def phase_screen_petal_corrected(self):
-        return self.phase_screen_ave() - \
-            self.phase_correction_from_petalometer()
+        phase_correction_cube = np.tile(self.phase_correction_from_petalometer(),
+                                        (self.phase_screen().shape[0], 1, 1))
+        return self.phase_screen()-phase_correction_cube
+
 
     @property
     def rot_angle(self):
         return self._rot_angle
+

@@ -16,8 +16,12 @@ TN_REF_100 = '20231213_123200.0_coo0.0_0.0'
 TN_REF_10 = '20231213_123403.0_coo0.0_0.0'
 
 
-def savename(tn, code):
-    return os.path.join(ROOT_DIR, tn, 'long_exp_%s.fits' % code)
+def _tracknum_code(tn, code):
+    return "%s_%s" % (tn, code)
+
+
+def _filename(tn, code):
+    return os.path.join(ROOT_DIR, _tracknum_code(tn, code), 'long_exp.fits')
 
 
 def _create_long_exposure_generic(tn,
@@ -27,12 +31,12 @@ def _create_long_exposure_generic(tn,
                                   wavelength=1650*u.nm,
                                   n_iter=1000):
     le = LongExposurePetalometer(
-        tracking_number=tn, rot_angle=rot_angle,
+        tracking_number=_tracknum_code(tn, code), rot_angle=rot_angle,
         petals=petals,
         wavelength=wavelength,
         n_iter=n_iter)
     le.run()
-    le.save(savename(tn, code))
+    le.save(_filename(tn, code))
     return le
 
 
@@ -108,27 +112,30 @@ def analyze_scao_2000_0002():
     return _analyze_long_exposure(TN_SCAO_2000, '0002')
 
 
+def animate_all(lep):
+    lep.animate_phase_screens_cumulative_average(vminmax=(-1000, 1000))
+    lep.animate_phase_screens(vminmax=(-1000, 1000))
+    lep.animate_phase_difference(vminmax=(-900, 900))
+    lep.animate_phase_difference_cumulative_average(vminmax=(-900, 900))
+
 def _analyze_long_exposure(tracknum, code):
     '''
     Measure and compensate for petals on MORFEO residuals
     '''
-    le = LongExposurePetalometer.load(savename(tracknum, code))
-    phase_screens = le.phase_screen()[20:]
-    phase_correction = np.tile(
-        le.phase_correction_from_petalometer(), (phase_screens.shape[0], 1, 1))
-    phase_screens_petal_corrected = phase_screens - phase_correction
-    std_input = phase_screens.std(axis=(1, 2))
-    std_res_pet_corr = phase_screens_petal_corrected.std(axis=(1, 2))
+    le = LongExposurePetalometer.load(_filename(tracknum, code))
+    phase_screens_petal_corrected = le.phase_screen_petal_corrected()
+    std_input = le.phase_screen()[20:].std(axis=(1, 2))
+    std_corr = phase_screens_petal_corrected[20:].std(axis=(1, 2))
     petals, jumps = le.petals_from_phase_difference_ave()
-    _plot_stdev_residual(std_input, std_res_pet_corr,
+    _plot_stdev_residual(std_input, std_corr,
                          title="%s %s" % (tracknum, code))
     print('\n\nMean of MORFEO residuals stds: %s' % std_input.mean())
     print(
         '\nMean of MORFEO residuals (with petalometer correction) stds: %s'
-        % std_res_pet_corr.mean())
+        % std_corr.mean())
     print('\nMeasured petals: %s' % petals)
     print('\nMeasured jumps: %s' % jumps[::2])
-    return le, phase_correction, std_input, std_res_pet_corr
+    return le, std_input, std_corr
 
 
 def _plot_stdev_residual(std_input, std_res_pet_corr, title=''):
@@ -140,3 +147,13 @@ def _plot_stdev_residual(std_input, std_res_pet_corr, title=''):
     plt.ylabel('Std [nm]')
     plt.xlabel('Step number')
     plt.title(title)
+
+
+def update_header(tn, code):
+    from astropy.io import fits
+    # tn = TN_MCAO_1
+    # code = '0002'
+    fn = _filename(tn, code)
+    tc = _tracknum_code(tn, code)
+    fits.setval(fn, 'HIERARCH LPE.LPE_TRACKNUM', value=tc)
+    fits.setval(fn, 'HIERARCH LPE.TRACKNUM', value=tn)
