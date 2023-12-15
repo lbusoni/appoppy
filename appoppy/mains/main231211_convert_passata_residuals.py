@@ -10,7 +10,7 @@ def convert_passata_residual_example():
     along the direction rho=0, theta=0
 
     Data files CUBE_CL_coo0.0_0.0.fits and params.txt have already been 
-    manually copied in appoppy/data/20210511_144618.0  
+    manually copied in appoppy/data/passata_simulations/20210511_144618.0  
     
     Create a PASSATASimulationConverter object.
     Define the directions rho e theta as string '0.0' as in the name of the fits file    
@@ -22,8 +22,8 @@ def convert_passata_residual_example():
     
     Call PASSATASimulationConverter.convert_from_fits_data()
     
-    The folder appoppy/data/20120511_144618.0_coo0.0_0.0 is created with file
-    CUBE_CL_converted.fits inside.
+    The folder appoppy/data/passata_simulations_converted/20120511_144618.0_coo0.0_0.0 
+    is created with file CUBE_CL_converted.fits inside.
     
     The converted file can be read using restore_residual_wavefront
     

@@ -32,13 +32,15 @@ class PASSATASimulationConverter():
     def __init__(self):
         pass
 
-    def convert_residual_wavefront(self):
+    def convert_from_sav(self):
 
         fname_sav = os.path.join(data_root_dir(),
+                                 'passata_simulations',
                                  '20210518_223459.0',
                                  'CUBE_CL_coo0.0_0.0.sav')
 
         fname_fits = os.path.join(data_root_dir(),
+                                  'passata_simulations_converted',
                                   '20210518_223459.0',
                                   'CUBE_CL_converted.fits')
 
@@ -63,20 +65,15 @@ class PASSATASimulationConverter():
         fits.writeto(fname_fits, res_wfs.data, header)
         fits.append(fname_fits, mask.astype(int))
 
-    def convert_hires_wavefront(self, tracking_number):
-        self.convert_from_fits_data(tracking_number,
-                                    '0.0', '0.0',
-                                    elt_aperture.PUPIL_MASK_512,
-                                    0.001)
-
     def convert_from_fits_data(self, tracking_number, rho, theta, pupilmasktag,
                                timestep):
         fname_orig_fits = os.path.join(data_root_dir(),
+                                       'passata_simulations',
                                        tracking_number,
                                        'CUBE_CL_coo%s_%s.fits' % (rho, theta))
-        fname_newdir = os.path.join(data_root_dir(),
+        fname_newdir = os.path.join(data_root_dir(), 'passata_simulations_converted',
                                     tracking_number + '_coo%s_%s' % (rho, theta))
-        os.mkdir(fname_newdir)
+        os.makedirs(fname_newdir, exist_ok=True)
         fname_fits = os.path.join(fname_newdir, 'CUBE_CL_converted.fits')
         dat, hdr = fits.getdata(fname_orig_fits, 0, header=True)
         maskhdu = restore_elt_pupil_mask(pupilmasktag)
@@ -115,8 +112,9 @@ class PASSATASimulationConverter():
         header[AoResSnapshotEntry.PIXEL_SCALE] = 1
         header[AoResSnapshotEntry.PUPIL_TAG] = 'None'
         header[AoResSnapshotEntry.TIME_STEP] = 1
-        fname_newdir = os.path.join(data_root_dir(), 'none')
-        os.mkdir(fname_newdir)
+        fname_newdir = os.path.join(
+            data_root_dir(), 'passata_simulations_converted', 'none')
+        os.makedirs(fname_newdir, exist_ok=True)
         fname_fits = os.path.join(fname_newdir, 'CUBE_CL_converted.fits')
         fits.writeto(fname_fits, res_wf.data, header)
         fits.append(fname_fits, mask[0].astype(int))
@@ -126,6 +124,7 @@ def restore_residual_wavefront(tracking_number):
     #  '20210518_223459.0'
 
     fname_fits = os.path.join(data_root_dir(),
+                              'passata_simulations_converted',
                               tracking_number,
                               'CUBE_CL_converted.fits')
     dat, hdr = fits.getdata(fname_fits, 0, header=True)
