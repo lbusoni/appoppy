@@ -35,8 +35,8 @@ def opd_turbolenza_kolmo():
     m2 = EltForPetalometry(
         use_simulated_residual_wfe=False,
         r0=0.26, kolm_seed=np.random.randint(2147483647))
-    osys = m2._osys
-    kopd = osys.planes[0].get_opd(osys.input_wavefront(2.2e-6 * u.m))
+    kopd = m2.optical_system.planes[0].get_opd(
+        m2.optical_system.input_wavefront(2.2e-6 * u.m))
     kopdm = np.ma.MaskedArray(kopd, mask=m2.pupil_mask())
     print('std %g' % kopdm.std())
 
@@ -46,8 +46,8 @@ def opd_turbolenza_residui_MCAO(start_from=0):
         use_simulated_residual_wfe=True,
         tracking_number='20210518_223459.0',
         residual_wavefront_start_from=start_from)
-    osys = m2._osys
-    kopd = osys.planes[0].get_opd(osys.input_wavefront(2.2e-6 * u.m))
+    kopd = m2.optical_system.planes[0].get_opd(
+        m2.optical_system.input_wavefront(2.2e-6 * u.m))
     kopdm = np.ma.MaskedArray(kopd, mask=m2.pupil_mask())
     print('std %g' % kopdm.std())
     return m2

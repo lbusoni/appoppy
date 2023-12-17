@@ -41,9 +41,10 @@ class EltForPetalometry(Snapshotable):
     tracking_number: string
         AO residual wfe to use. Set it to None to disable. Default=None
 
-    zern_coeff: tuple
+    zern_coeff: tuple or None
         Zernike coefficients of the static WFE to add to the pupil. Unit
-        in meters, starting from piston. Default=[0]
+        in meters, starting from piston. Set it to None to disable.
+        Default=None
 
     lwe_wind_speed: float or None
         wind speed of low wind effect simulations in m/s.
@@ -51,7 +52,7 @@ class EltForPetalometry(Snapshotable):
         Default = None
 
     rotation_angle: float
-        rotation angle in degree of the petalometer
+        rotation angle in degree of the petalometer. Default=0
 
     kolm_seed: int
         seed of random number generator for Kolmogorov turbulence. Default=0
@@ -60,11 +61,19 @@ class EltForPetalometry(Snapshotable):
         index of AO residual wfe frame to start from.
         Used to skip the convergence. Default=100
     '''
+    PLANE_TURBULENCE = 'Turbulence'
+    PLANE_AO_RESIDUAL = 'AO residual'
+    PLANE_LOW_WIND_EFFECT = 'LWE'
+    PLANE_ZERNIKE = 'Zernike'
+    PLANE_M4_PETALS = 'M4 petals'
+    PLANE_ELT_APERTURE = 'ELT aperture'
+    PLANE_PHASE_SHIFT = 'phase shift'
+    PLANE_EXIT_PUPIL = 'exit pupil'
 
     def __init__(self,
                  r0=np.inf,
                  tracking_number=None,
-                 zern_coeff=[0.0],
+                 zern_coeff=None,
                  lwe_speed=None,
                  rotation_angle=0,
                  kolm_seed=0,
@@ -85,7 +94,7 @@ class EltForPetalometry(Snapshotable):
         self._kolm_seed = kolm_seed
         self.pupil_rotation_angle = rotation_angle
         self._lwe_wind_speed = lwe_speed
-        self._zern_coeff = np.array(zern_coeff)
+        self.zernike_coefficients = zern_coeff
         self._r0 = r0
         self._tracknum = tracking_number
 
@@ -97,47 +106,52 @@ class EltForPetalometry(Snapshotable):
             npix=self._npix,
             pupil_diameter=2 * self.telescope_radius)
 
-        r0l = self._r0 * u.m * (self.wavelength / (0.5e-6 * u.m)) ** (6 / 5)
-        kolmo_wfe = poppy.KolmogorovWFE(
-            name='Turbulence',
-            r0=r0l,
-            dz=1 * u.m,
-            seed=self._kolm_seed)
-        self._osys.add_pupil(kolmo_wfe)
+        if self._r0 != np.inf:
+            r0l = self._r0 * u.m * \
+                (self.wavelength / (0.5e-6 * u.m)) ** (6 / 5)
+            kolmo_wfe = poppy.KolmogorovWFE(
+                name=self.PLANE_TURBULENCE,
+                r0=r0l,
+                dz=1 * u.m,
+                seed=self._kolm_seed)
+            self._osys.add_pupil(kolmo_wfe)
 
-        self._aores_wfe = MaoryResidualWavefront(
-            self._tracknum,
-            start_from=residual_wavefront_start_from,
-            step=residual_wavefront_step,
-            average_on=residual_wavefront_average_on)
-        self._osys.add_pupil(self._aores_wfe)
+        if self._tracknum is not None:
+            self._aores_wfe = MaoryResidualWavefront(
+                self._tracknum,
+                start_from=residual_wavefront_start_from,
+                step=residual_wavefront_step,
+                average_on=residual_wavefront_average_on,
+                name=self.PLANE_AO_RESIDUAL)
+            self._osys.add_pupil(self._aores_wfe)
 
-        self._osys.add_pupil(LowWindEffectWavefront(self._lwe_wind_speed))
+        if self._lwe_wind_speed is not None:
+            self._osys.add_pupil(LowWindEffectWavefront(
+                self._lwe_wind_speed, name=self.PLANE_LOW_WIND_EFFECT))
 
-        self._osys.add_pupil(poppy.ZernikeWFE(name='Zernike WFE',
-                                              coefficients=zern_coeff,
-                                              radius=self.telescope_radius))
-        self._osys.add_pupil(PetaledM4())
-        self._osys.add_pupil(ELTAperture())
+        if self.zernike_coefficients is not None:
+            self._osys.add_pupil(poppy.ZernikeWFE(name=self.PLANE_ZERNIKE,
+                                                  coefficients=self.zernike_coefficients,
+                                                  radius=self.telescope_radius))
+        self._osys.add_pupil(PetaledM4(name=self.PLANE_M4_PETALS))
+        self._osys.add_pupil(ELTAperture(name=self.PLANE_ELT_APERTURE))
         self._osys.add_pupil(ScalarOpticalPathDifference(
-            opd=0 * u.nm, planetype=PlaneType.pupil))
-        self._osys.add_rotation(-1 * self.pupil_rotation_angle)
+            opd=0 * u.nm, planetype=PlaneType.pupil, name=self.PLANE_PHASE_SHIFT))
+
+        if self.pupil_rotation_angle != 0:
+            self._osys.add_rotation(-1 * self.pupil_rotation_angle)
         self._osys.add_pupil(poppy.CircularAperture(radius=self.telescope_radius,
-                                                    name='Entrance Pupil'))
+                                                    name=self.PLANE_EXIT_PUPIL))
         self._osys.add_detector(
             pixelscale=0.5 * self.lambda_over_d / (1 * u.pixel),
             fov_arcsec=1)
 
-        self._turbulence_plane = 0
-        self._aores_plane = 1
-        self._lwe_plane = 2
-        self._zernike_wavefront_plane = 3
-        self._m4_wavefront_plane = 4
-        self._phase_shift_plane = -4
-        self._exit_pupil_plane = -2
+        self._planes_idx_dict = {x.name: i for i,
+                                 x in enumerate(self._osys.planes)}
 
         self.display_intermediates = False
         self._reset_intermediate_wfs()
+
 
     @property
     def optical_system(self):
@@ -154,12 +168,18 @@ class EltForPetalometry(Snapshotable):
         snapshot[EfpSnapshotEntry.PUPIL_ROTATION_ANGLE] = \
             self.pupil_rotation_angle
         snapshot[EfpSnapshotEntry.LWE_WIND_SPEED] = self._lwe_wind_speed
-        snapshot[EfpSnapshotEntry.ZERNIKE_COEFFICIENTS] = np.array2string(
-            self._zern_coeff)
+
+        if self.zernike_coefficients is not None:
+            snapshot[EfpSnapshotEntry.ZERNIKE_COEFFICIENTS] = np.array2string(
+                self.zernike_coefficients)
+        else:
+            snapshot[EfpSnapshotEntry.ZERNIKE_COEFFICIENTS] = None
+
         snapshot[EfpSnapshotEntry.R0] = self._r0
         snapshot[EfpSnapshotEntry.PASSATA_TRACKING_NUMBER] = self._tracknum
-        snapshot.update(
-            self._aores_wfe.get_snapshot(SnapshotPrefix.PASSATA_RESIDUAL))
+        if self._tracknum is not None:
+            snapshot.update(
+                self._aores_wfe.get_snapshot(SnapshotPrefix.PASSATA_RESIDUAL))
         return Snapshotable.prepend(prefix, snapshot)
 
     def _reset_intermediate_wfs(self):
@@ -171,34 +191,52 @@ class EltForPetalometry(Snapshotable):
     #     pass
 
     def set_input_wavefront_zernike(self, zern_coeff):
+        '''
+        Set Zernike amplitudes
+        
+        If this object has been created with zern_coeff=None, this
+        method will raise an exception
+        
+        An aberration corresponding to the standard Zernike polynomials
+        with the specified amplitude and radius equal to telescope_radius
+        is added to the system.
+        The first element correspond to the piston. Ordered as in Noll '76 
+        
+        Parameters
+        ----------
+        zern_coeff: astropy.quantity equivalent to u.m of shape (N,)
+            Zernike amplitudes
+
+        '''
         self._reset_intermediate_wfs()
-        self._zern_coeff = np.array(zern_coeff)
-        in_wfe = poppy.ZernikeWFE(name='Zernike WFE',
+        in_wfe = poppy.ZernikeWFE(name=self.PLANE_ZERNIKE,
                                   coefficients=zern_coeff,
                                   radius=self.telescope_radius)
-        self.optical_system.planes[self._zernike_wavefront_plane] = in_wfe
+        self.optical_system.planes[self._planes_idx_dict[self.PLANE_ZERNIKE]] = in_wfe
+        self.zernike_coefficients = zern_coeff.to_value(u.m)
 
     def set_m4_petals(self, piston):
         self._reset_intermediate_wfs()
-        in_wfe = PetaledM4(piston, name='Piston WFE')
-        self.optical_system.planes[self._m4_wavefront_plane] = in_wfe
+        in_wfe = PetaledM4(piston, name=self.PLANE_M4_PETALS)
+        self.optical_system.planes[self._planes_idx_dict[self.PLANE_M4_PETALS]] = in_wfe
 
     def set_phase_shift(self, shift_in_lambda):
         self._reset_intermediate_wfs()
         in_wfe = ScalarOpticalPathDifference(
             opd=shift_in_lambda * self.wavelength,
             planetype=PlaneType.pupil,
-            name='phase_shift')
-        self.optical_system.planes[self._phase_shift_plane] = in_wfe
+            name=self.PLANE_PHASE_SHIFT)
+        self.optical_system.planes[self._planes_idx_dict[self.PLANE_PHASE_SHIFT]] = in_wfe
 
     def set_step_idx(self, step_idx):
         # advance residual phase screen
         self._reset_intermediate_wfs()
-        self.optical_system.planes[self._aores_plane].set_step_idx(step_idx)
+        self.optical_system.planes[self._planes_idx_dict[self.PLANE_AO_RESIDUAL]].set_step_idx(
+            step_idx)
 
     def set_kolm_seed(self, seed):
         self._reset_intermediate_wfs()
-        self.optical_system.planes[self._turbulence_plane].seed = seed
+        self.optical_system.planes[self._planes_idx_dict[self.PLANE_TURBULENCE]].seed = seed
         self._kolm_seed = seed
 
     def propagate(self):
@@ -236,7 +274,7 @@ class EltForPetalometry(Snapshotable):
         return self._intermediates_wfs[plane_no]
 
     def pupil_wavefront(self):
-        return self._wave(self._exit_pupil_plane)
+        return self._wave(self._planes_idx_dict[self.PLANE_EXIT_PUPIL])
 
     def pupil_phase(self):
         return self.pupil_wavefront().phase
@@ -269,12 +307,23 @@ class EltForPetalometry(Snapshotable):
             _ = plane.get_phasor(wave)
             return plane._resampled_opd
 
-        opd += osys.planes[self._turbulence_plane].get_opd(wave)
-        opd += _trick_to_get_resampled_opd(osys.planes[self._aores_plane])
-        opd += _trick_to_get_resampled_opd(osys.planes[self._lwe_plane])
-        opd += osys.planes[self._zernike_wavefront_plane].get_opd(wave)
-        opd += osys.planes[self._m4_wavefront_plane].get_opd(wave)
-        opd += osys.planes[self._phase_shift_plane].get_opd(wave)
+        def _try_add_opd(plane_name, wave, use_trick):
+            try:
+                if use_trick:
+                    return _trick_to_get_resampled_opd(
+                        osys.planes[self._planes_idx_dict[plane_name]])
+                else:
+                    return osys.planes[self._planes_idx_dict[plane_name]
+                                       ].get_opd(wave)
+            except KeyError:
+                return 0
+
+        opd += _try_add_opd(self.PLANE_TURBULENCE, wave, False)
+        opd += _try_add_opd(self.PLANE_AO_RESIDUAL, wave, True)
+        opd += _try_add_opd(self.PLANE_LOW_WIND_EFFECT, wave, True)
+        opd += _try_add_opd(self.PLANE_ZERNIKE, wave, False)
+        opd += _try_add_opd(self.PLANE_M4_PETALS, wave, False)
+        opd += _try_add_opd(self.PLANE_PHASE_SHIFT, wave, False)
 
         opdm = np.ma.MaskedArray(opd, mask=self.pupil_mask())
         return opdm * 1e9
@@ -320,10 +369,12 @@ class EltForPetalometry(Snapshotable):
         self._display_on_plane('phase', plane_number, scale='linear')
 
     def display_pupil_intensity(self, **kw):
-        self.display_intensity_on_plane(self._exit_pupil_plane, **kw)
+        self.display_intensity_on_plane(
+            self._planes_idx_dict[self.PLANE_EXIT_PUPIL], **kw)
 
     def display_pupil_phase(self, **kw):
-        self.display_phase_on_plane(self._exit_pupil_plane, **kw)
+        self.display_phase_on_plane(
+            self._planes_idx_dict[self.PLANE_EXIT_PUPIL], **kw)
 
     def display_pupil_opd(self, title='Total OPD', **kw):
         wave = self._wave(0)
@@ -339,7 +390,7 @@ class EltForPetalometry(Snapshotable):
         plt.colorbar()
 
     def plot_pupil_intensity_row(self, row=None, scale='linear'):
-        aa = self._wave(self._exit_pupil_plane)
+        aa = self._wave(self._planes_idx_dict[self.PLANE_EXIT_PUPIL])
         image = aa.intensity
         title = aa.location
         if row is None:

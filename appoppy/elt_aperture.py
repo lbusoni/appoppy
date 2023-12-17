@@ -53,7 +53,7 @@ def restore_elt_pupil_mask(pupil_mask_tag):
     return hdu
 
 
-def ELTAperture(pupil_mask_tag=PUPIL_MASK_480):
+def ELTAperture(pupil_mask_tag=PUPIL_MASK_480, **kwargs):
 
     def _invert_int_mask(mask):
         return -mask + 1
@@ -62,4 +62,4 @@ def ELTAperture(pupil_mask_tag=PUPIL_MASK_480):
     hdumask.data = _invert_int_mask(hdumask.data)
     return poppy.FITSOpticalElement(
         transmission=fits.HDUList([hdumask]),
-        planetype=PlaneType.pupil)
+        planetype=PlaneType.pupil, **kwargs)
