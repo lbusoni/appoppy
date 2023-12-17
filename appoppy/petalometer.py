@@ -179,6 +179,10 @@ class Petalometer(Snapshotable):
         self._model2.set_step_idx(self._step_idx)
 
     @property
+    def step_idx(self):
+        return self._step_idx
+
+    @property
     def _expected_jumps(self):
         dd = np.repeat(self.petals, 2)
         # return wrap_around_zero(np.roll(dd, 1) - dd,

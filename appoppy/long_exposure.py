@@ -76,11 +76,11 @@ class LongExposurePetalometer(Snapshotable):
         self._phase_screen = np.ma.zeros(sh)
         self._pet.set_step_idx(0)
         for i in range(self._niter):
-            print("step %d" % self._pet._step_idx)
+            print("step %d" % self._pet.step_idx)
             self._pet.sense_wavefront_jumps()
-            self._meas_petals[self._pet._step_idx] = self._pet.error_petals
-            self._phase_diff[self._pet._step_idx] = self._pet.phase_difference_map
-            self._phase_screen[self._pet._step_idx] = self._pet.pupil_opd
+            self._meas_petals[self._pet.step_idx] = self._pet.error_petals
+            self._phase_diff[self._pet.step_idx] = self._pet.phase_difference_map
+            self._phase_screen[self._pet.step_idx] = self._pet.pupil_opd
             self._pet.advance_step_idx()
 
     def phase_screen(self):
