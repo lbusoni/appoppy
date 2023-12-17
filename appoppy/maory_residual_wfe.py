@@ -121,8 +121,6 @@ class PASSATASimulationConverter():
 
 
 def restore_residual_wavefront(tracking_number):
-    #  '20210518_223459.0'
-
     fname_fits = os.path.join(data_root_dir(),
                               'passata_simulations_converted',
                               tracking_number,

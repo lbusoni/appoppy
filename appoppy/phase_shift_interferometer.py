@@ -39,6 +39,8 @@ class PhaseShiftInterferometer(Snapshotable):
         self._os2 = optical_system_2
         self._should_unwrap = False
         self._log = logging.getLogger('appoppy')
+        self._create_system()
+        self._ios_wf = None
         # assert self._os1.wavelength == self._os2.wavelength
         # TODO probably some check?
 
@@ -47,7 +49,7 @@ class PhaseShiftInterferometer(Snapshotable):
         snapshot[PsiSnapshotEntry.SHOULD_UNWRAP] = self._should_unwrap
         return Snapshotable.prepend(prefix, snapshot)
 
-    def combine(self):
+    def _create_system(self):
         self._ios = poppy.OpticalSystem(
             oversample=self._os1._osys.oversample,
             npix=self._os1._osys.npix,
@@ -56,7 +58,10 @@ class PhaseShiftInterferometer(Snapshotable):
         self._ios.add_pupil(
             poppy.CircularAperture(radius=self._os1.telescope_radius,
                                    name='Entrance Pupil'))
-        self._ios_wf = self._propagate()
+
+    @property
+    def combined_wavefront(self):
+        return self._propagate()
 
     def _propagate(self):
         self._wv1 = self._os1.pupil_wavefront()
@@ -163,16 +168,16 @@ class PhaseShiftInterferometer(Snapshotable):
         return mask_from_median(self.interferogram(), cut)
 
     def pupil_intensity(self):
-        return self._ios_wf.intensity
+        return self.combined_wavefront.intensity
 
     def pupil_phase(self):
-        return self._ios_wf.phase
+        return self.combined_wavefront.phase
 
     def display_pupil_intensity(self, **kwargs):
-        self._ios_wf.display(what='intensity', **kwargs)
+        self.combined_wavefront.display(what='intensity', **kwargs)
 
     def display_pupil_phase(self, **kwargs):
-        self._ios_wf.display(what='phase', **kwargs)
+        self.combined_wavefront.display(what='phase', **kwargs)
 
     def _pump_up_zero_for_log_display(self, image):
         ret = image * 1.0

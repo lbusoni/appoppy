@@ -33,8 +33,6 @@ class Petalometer(Snapshotable):
                  should_display=True):
         if kolm_seed is None:
             seed = np.random.randint(2147483647)
-        # if residual_wavefront_index:
-        #    residual_wavefront_index = np.random.randint(100, 1000)
 
         self._log = logging.getLogger('appoppy')
         self._step_idx = 0
@@ -72,8 +70,6 @@ class Petalometer(Snapshotable):
         self.set_zernike_wavefront(zernike)
 
         self._i4 = PhaseShiftInterferometer(self._model1, self._model2)
-        self._i4.combine()
-        self.sense_wavefront_jumps()
 
     def get_snapshot(self, prefix=SnapshotPrefix.PETALOMETER):
         snapshot = {}

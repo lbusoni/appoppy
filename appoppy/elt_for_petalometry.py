@@ -139,6 +139,7 @@ class EltForPetalometry(Snapshotable):
         self.display_intermediates = False
         self._reset_intermediate_wfs()
 
+
     def get_snapshot(self, prefix='EFP'):
         snapshot = {}
         snapshot[EfpSnapshotEntry.NAME] = self.name
