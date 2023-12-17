@@ -51,8 +51,8 @@ class PhaseShiftInterferometer(Snapshotable):
 
     def _create_system(self):
         self._ios = poppy.OpticalSystem(
-            oversample=self._os1._osys.oversample,
-            npix=self._os1._osys.npix,
+            oversample=self._os1.optical_system.oversample,
+            npix=self._os1.optical_system.npix,
             pupil_diameter=2 * self._os1.telescope_radius)
 
         self._ios.add_pupil(

@@ -139,6 +139,9 @@ class EltForPetalometry(Snapshotable):
         self.display_intermediates = False
         self._reset_intermediate_wfs()
 
+    @property
+    def optical_system(self):
+        return self._osys
 
     def get_snapshot(self, prefix='EFP'):
         snapshot = {}
@@ -173,12 +176,12 @@ class EltForPetalometry(Snapshotable):
         in_wfe = poppy.ZernikeWFE(name='Zernike WFE',
                                   coefficients=zern_coeff,
                                   radius=self.telescope_radius)
-        self._osys.planes[self._zernike_wavefront_plane] = in_wfe
+        self.optical_system.planes[self._zernike_wavefront_plane] = in_wfe
 
     def set_m4_petals(self, piston):
         self._reset_intermediate_wfs()
         in_wfe = PetaledM4(piston, name='Piston WFE')
-        self._osys.planes[self._m4_wavefront_plane] = in_wfe
+        self.optical_system.planes[self._m4_wavefront_plane] = in_wfe
 
     def set_phase_shift(self, shift_in_lambda):
         self._reset_intermediate_wfs()
@@ -186,28 +189,28 @@ class EltForPetalometry(Snapshotable):
             opd=shift_in_lambda * self.wavelength,
             planetype=PlaneType.pupil,
             name='phase_shift')
-        self._osys.planes[self._phase_shift_plane] = in_wfe
+        self.optical_system.planes[self._phase_shift_plane] = in_wfe
 
     def set_step_idx(self, step_idx):
         # advance residual phase screen
         self._reset_intermediate_wfs()
-        self._osys.planes[self._aores_plane].set_step_idx(step_idx)
+        self.optical_system.planes[self._aores_plane].set_step_idx(step_idx)
 
     def set_kolm_seed(self, seed):
         self._reset_intermediate_wfs()
-        self._osys.planes[self._turbulence_plane].seed = seed
+        self.optical_system.planes[self._turbulence_plane].seed = seed
         self._kolm_seed = seed
 
     def propagate(self):
         self._log.info('propagating')
-        _, self._intermediates_wfs = self._osys.propagate(
-            self._osys.input_wavefront(self.wavelength),
+        _, self._intermediates_wfs = self.optical_system.propagate(
+            self.optical_system.input_wavefront(self.wavelength),
             normalize='first',
             display_intermediates=self.display_intermediates,
             return_intermediates=True)
 
     def compute_psf(self):
-        self._psf, self._intermediates_wfs = self._osys.calc_psf(
+        self._psf, self._intermediates_wfs = self.optical_system.calc_psf(
             self.wavelength,
             return_intermediates=True,
             display_intermediates=self.display_intermediates,
@@ -258,7 +261,7 @@ class EltForPetalometry(Snapshotable):
     def pupil_opd(self):
         if not self._intermediates_wfs:
             self.propagate()
-        osys = self._osys
+        osys = self.optical_system
         wave = osys.input_wavefront(self.wavelength)
         opd = 0
 
