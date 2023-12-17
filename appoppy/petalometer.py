@@ -27,7 +27,7 @@ class Petalometer(Snapshotable):
                  npix=256,
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  rotation_angle=15,
-                 zernike=[0, 0],
+                 zernike=np.array([0])*u.nm,
                  wavelength=2.2e-6 * u.m,
                  kolm_seed=None,
                  should_display=True):
@@ -46,6 +46,7 @@ class Petalometer(Snapshotable):
             kolm_seed=seed,
             lwe_speed=lwe_speed,
             rotation_angle=rotation_angle,
+            zern_coeff=zernike,
             npix=npix,
             wavelength=wavelength,
             residual_wavefront_start_from=residual_wavefront_start_from,
@@ -59,6 +60,7 @@ class Petalometer(Snapshotable):
             kolm_seed=seed,
             lwe_speed=lwe_speed,
             rotation_angle=0,
+            zern_coeff=zernike,
             npix=npix,
             wavelength=wavelength,
             residual_wavefront_start_from=residual_wavefront_start_from,
@@ -137,9 +139,9 @@ class Petalometer(Snapshotable):
             petals to be applied on M4
         '''
         # self._petals = zero_mean(petals, self.wavelength)
-        self._petals = petals
         self._model1.set_m4_petals(self._petals)
         self._model2.set_m4_petals(self._petals)
+        self._petals = petals
 
     # def set_atmospheric_wavefront(self, atmospheric_wavefront):
     #     self._atmo_opd = atmospheric_wavefront

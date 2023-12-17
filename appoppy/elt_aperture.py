@@ -11,7 +11,8 @@ PUPIL_MASK_480_PHASE_C = 'EELT480pp0.0813spiderRoundObsCentered.fits'
 PUPIL_MASK_512 = 'EELT512pp0.0762nogapRoundObs.fits'
 PUPIL_MASK_480_PHASE_C_SPIDER23 = 'EELT480pp0.0803m_obs0.283_spider2023.fits'
 PUPIL_MASK_480_PHASE_C_SPIDER23_HIRES = 'EELT480pp0.0803m_obs0.283_spider2023.fits'
-
+PUPIL_MASK_DEFAULT = PUPIL_MASK_480_PHASE_C_SPIDER23
+PUPIL_MASK_NONE = 'None'
 
 def restore_elt_pupil_mask(pupil_mask_tag):
 
@@ -53,13 +54,16 @@ def restore_elt_pupil_mask(pupil_mask_tag):
     return hdu
 
 
-def ELTAperture(pupil_mask_tag=PUPIL_MASK_480, **kwargs):
+class ELTAperture(poppy.FITSOpticalElement):
 
+    def __init__(self, pupil_mask_tag, **kwargs):
+        hdumask = restore_elt_pupil_mask(pupil_mask_tag)
+        hdumask.data = ELTAperture._invert_int_mask(hdumask.data)
+        self.pupil_mask_tag = pupil_mask_tag
+        poppy.FITSOpticalElement.__init__(self,
+                                          transmission=fits.HDUList([hdumask]),
+                                          planetype=PlaneType.pupil, **kwargs)
+
+    @staticmethod
     def _invert_int_mask(mask):
         return -mask + 1
-
-    hdumask = restore_elt_pupil_mask(pupil_mask_tag)
-    hdumask.data = _invert_int_mask(hdumask.data)
-    return poppy.FITSOpticalElement(
-        transmission=fits.HDUList([hdumask]),
-        planetype=PlaneType.pupil, **kwargs)

@@ -3,6 +3,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import astropy.units as u
 import poppy
+from appoppy import elt_aperture
 from appoppy.petaled_m4 import PetaledM4
 from poppy.optics import ScalarOpticalPathDifference
 from poppy.poppy_core import PlaneType
@@ -134,7 +135,11 @@ class EltForPetalometry(Snapshotable):
                                                   coefficients=self.zernike_coefficients,
                                                   radius=self.telescope_radius))
         self._osys.add_pupil(PetaledM4(name=self.PLANE_M4_PETALS))
-        self._osys.add_pupil(ELTAperture(name=self.PLANE_ELT_APERTURE))
+
+        self._osys.add_pupil(ELTAperture(
+            pupil_mask_tag=elt_aperture.PUPIL_MASK_DEFAULT, name=self.PLANE_ELT_APERTURE))
+
+
         self._osys.add_pupil(ScalarOpticalPathDifference(
             opd=0 * u.nm, planetype=PlaneType.pupil, name=self.PLANE_PHASE_SHIFT))
 
@@ -215,9 +220,18 @@ class EltForPetalometry(Snapshotable):
         self.optical_system.planes[self._planes_idx_dict[self.PLANE_ZERNIKE]] = in_wfe
         self.zernike_coefficients = zern_coeff.to_value(u.m)
 
-    def set_m4_petals(self, piston):
+    def set_m4_petals(self, petals):
+        '''
+        Set M4 petals
+
+        Parameters
+        ----------
+        petals: astropy.quantity equivalent to u.m of shape (6,)
+            petals to be applied on M4
+        '''
+
         self._reset_intermediate_wfs()
-        in_wfe = PetaledM4(piston, name=self.PLANE_M4_PETALS)
+        in_wfe = PetaledM4(petals, name=self.PLANE_M4_PETALS)
         self.optical_system.planes[self._planes_idx_dict[self.PLANE_M4_PETALS]] = in_wfe
 
     def set_phase_shift(self, shift_in_lambda):
