@@ -3,6 +3,7 @@ import astropy.units as u
 from pathlib import Path
 import os
 from appoppy.ao_residuals import AOResidual
+from appoppy.elt_for_petalometry import EltForPetalometry
 from appoppy.petalometer import Petalometer
 from appoppy.gif_animator import Gif2DMapsAnimator
 from astropy.io import fits
@@ -311,14 +312,12 @@ class LongExposurePetalometer(Snapshotable):
 
     def phase_correction_from_petalometer(self):
         pp, _ = self.petals_from_phase_difference_ave()
-        pet = Petalometer(
-            petals=pp,
-            rotation_angle=self._rot_angle,
-            npix=self.phase_screen_ave().shape[0],
-            wavelength=self._wavelength,
-            should_display=False)
-        opd = pet.pupil_opd
+        efp = EltForPetalometry(
+            npix=self.phase_screen_ave().shape[0])
+        efp.set_m4_petals(pp)
+        opd = efp.pupil_opd()
         return opd
+
 
     def phase_screen_petal_corrected(self):
         phase_correction_cube = np.tile(self.phase_correction_from_petalometer(),
