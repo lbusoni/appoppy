@@ -69,6 +69,7 @@ class LongExposurePetalometer(Snapshotable):
             wavelength=self._wavelength,
             should_display=False)
         self._pixelsize = self._pet.pixelsize.to_value(u.m)
+        self._pet.sense_wavefront_jumps()
         sh = (self._niter,
               self._pet.phase_difference_map.shape[0],
               self._pet.phase_difference_map.shape[1])
