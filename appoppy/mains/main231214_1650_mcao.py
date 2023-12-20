@@ -88,6 +88,14 @@ def create_long_exposure_scao_2000_0002():
     return _create_long_exposure_generic(TN_SCAO_2000, '0002', petals=np.array([400, 0, 0, 0, 0, 0]) * u.nm)
 
 
+def create_long_exposure_ref_1000_0000():
+    return _create_long_exposure_generic(TN_REF_1000, '0000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm, n_iter=200)
+
+
+def create_long_exposure_ref_1000_0002():
+    return _create_long_exposure_generic(TN_REF_1000, '0002', petals=np.array([400, 0, 0, 0, 0, 0]) * u.nm, n_iter=200)
+
+
 def analyze_none_0000():
     return _analyze_long_exposure(TN_NONE, '0000')
 
@@ -132,36 +140,55 @@ def analyze_scao_2000_0002():
     return _analyze_long_exposure(TN_SCAO_2000, '0002')
 
 
+def analyze_ref_1000_0000():
+    return _analyze_long_exposure(TN_REF_1000, '0000')
+
+
+def analyze_ref_1000_0002():
+    return _analyze_long_exposure(TN_REF_1000, '0002')
+
+
 def animate_all(lep):
     lep.animate_phase_screens_cumulative_average(vminmax=(-1000, 1000))
     lep.animate_phase_screens(vminmax=(-1000, 1000))
     lep.animate_phase_difference(vminmax=(-900, 900))
     lep.animate_phase_difference_cumulative_average(vminmax=(-900, 900))
+    lep.animate_corrected_opd(vminmax=(-900, 900))
+    lep.animate_corrected_opd_cumulative_average(vminmax=(-900, 900))
+
 
 def _analyze_long_exposure(tracknum, code):
     '''
     Measure and compensate for petals on MORFEO residuals
     '''
     le = LongExposurePetalometer.load(_filename(tracknum, code))
-    phase_screens_petal_corrected = le.phase_screen_petal_corrected()
-    std_input = le.phase_screen()[20:].std(axis=(1, 2))
-    std_corr = phase_screens_petal_corrected[20:].std(axis=(1, 2))
-    petals, jumps = le.petals_from_phase_difference_ave()
-    _plot_stdev_residual(std_input, std_corr,
+    std_input = le.input_opd()[20:].std(axis=(1, 2))
+    std_corr_inst = le.corrected_opd()[20:].std(axis=(1, 2))
+    std_corr_long = le.corrected_opd_from_reconstructed_phase_ave()[
+        20:].std(axis=(1, 2))
+    petals, jumps = le.petals_from_reconstructed_phase_map(
+        le.reconstructed_phase_ave())
+    _plot_stdev_residual(std_input, std_corr_inst, std_corr_long,
                          title="%s %s" % (tracknum, code))
-    print('\n\nMean of MORFEO residuals stds: %s' % std_input.mean())
+    print('\nMean of MORFEO residuals stds: %s' % std_input.mean())
     print(
-        '\nMean of MORFEO residuals (with petalometer correction) stds: %s'
-        % std_corr.mean())
+        'Mean of MORFEO residuals (with long exposure petal correction) stds: %s'
+        % std_corr_long.mean())
+    print(
+        'Mean of MORFEO residuals (with short exposure petal correction) stds: %s'
+        % std_corr_inst.mean())
     print('\nMeasured petals: %s' % petals)
-    print('\nMeasured jumps: %s' % jumps[::2])
-    return le, std_input, std_corr
+    print('Measured jumps: %s' % jumps[::2])
+    return le
 
 
-def _plot_stdev_residual(std_input, std_res_pet_corr, title=''):
+def _plot_stdev_residual(std_input, std_corr_inst, std_corr_long, title=''):
     plt.figure()
-    plt.plot(std_input, label='Petalometer OFF')
-    plt.plot(std_res_pet_corr, label='Petalometer ON')
+    plt.plot(std_input, label='Petalometer Off')
+    plt.plot(std_corr_inst, label='Petalometer On short exposure')
+    plt.plot(std_corr_long, label='Petalometer On long exposure')
+    quadr_diff = np.sqrt(std_input**2-std_corr_inst**2)
+    plt.plot(quadr_diff, label='quaddiff(Std_Off-Std_ShortExp)')
     plt.legend()
     plt.grid()
     plt.ylabel('Std [nm]')

@@ -125,14 +125,14 @@ def main_twi1_with_ciaciao_data():
     le24, _, _, _ = main230519_petalometer_on_MORFEO_residuals_with_LWE(
         wv_in_um=24)
     NFRAME = 100
-    fr1500 = le1500.phase_difference()[NFRAME] / 1500
-    fr1600 = le1600.phase_difference()[NFRAME] / 1600
+    fr1500 = le1500.reconstructed_phase()[NFRAME] / 1500
+    fr1600 = le1600.reconstructed_phase()[NFRAME] / 1600
     opd = twi1(fr1500, fr1600, 1500, 1600)
 
     # plot difference between dw opd and 24um
     import matplotlib.pyplot as plt
     plt.figure()
-    plt.imshow(le24.phase_difference()[NFRAME] - opd)
+    plt.imshow(le24.reconstructed_phase()[NFRAME] - opd)
     plt.colorbar()
 
     return opd, le1500, le1600, le24

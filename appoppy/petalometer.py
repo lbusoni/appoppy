@@ -18,7 +18,12 @@ class PetalometerSnapshotEntry(object):
 
 
 class Petalometer(Snapshotable):
-
+    '''
+    Rotational Shearing Interferometer for the ELT
+    
+    
+    
+    '''
     def __init__(self,
                  r0=np.inf,
                  tracking_number=None,
@@ -39,6 +44,8 @@ class Petalometer(Snapshotable):
         self._res_average_on = 1
         self._should_display = should_display
         self._petals = petals
+
+        self._jumps = None
 
         self._model1 = EltForPetalometry(
             r0=r0,
@@ -139,8 +146,8 @@ class Petalometer(Snapshotable):
             petals to be applied on M4
         '''
         # self._petals = zero_mean(petals, self.wavelength)
-        self._model1.set_m4_petals(self._petals)
-        self._model2.set_m4_petals(self._petals)
+        self._model1.set_m4_petals(petals)
+        self._model2.set_m4_petals(petals)
         self._petals = petals
 
     # def set_atmospheric_wavefront(self, atmospheric_wavefront):
@@ -157,6 +164,9 @@ class Petalometer(Snapshotable):
         It doesn't account for any other possible petaling included
         e.g. in the atmospheric residuals or LWE. 
 
+        See estimated_petals() for the Petalometer 
+        measurement of the OPD between petals
+
         Returns
         ----------
         petals: astropy.quantity equivalent to u.nm of shape (6,)
@@ -168,8 +178,8 @@ class Petalometer(Snapshotable):
         self._i4.acquire()
         if self._should_display:
             self._i4.display_interferogram()
-        self._compute_jumps_of_interferogram()
-        return self.error_jumps
+        self._pc = PetalComputer(self.phase_difference_map,
+                                 self._model1.pupil_rotation_angle)
 
     def advance_step_idx(self):
         self.set_step_idx(self._step_idx + self._res_average_on)
@@ -184,26 +194,24 @@ class Petalometer(Snapshotable):
     def step_idx(self):
         return self._step_idx
 
-    @property
-    def _expected_jumps(self):
-        dd = np.repeat(self.petals, 2)
-        # return wrap_around_zero(np.roll(dd, 1) - dd,
-        #                        self.wavelength)
-        return np.roll(dd, 1) - dd
+#    @property
+#    def _expected_jumps(self):
+#        dd = np.repeat(self.petals, 2)
+#        # return wrap_around_zero(np.roll(dd, 1) - dd,
+#        #                        self.wavelength)
+#        return np.roll(dd, 1) - dd
 
-    @property
-    def error_jumps(self):
-        # return wrap_around_zero(
-        #    (self._expected_jumps() - self._jumps).to(u.nm),
-        #    self.wavelength)
-        return (self._expected_jumps - self.all_jumps).to(u.nm)
+#    @property
+#    def error_jumps(self):
+#        return (self._expected_jumps - self._pc.all_jumps).to(u.nm)
 
     @property
     def error_petals(self):
         '''
         Petal estimate error
         
-        Difference between the measured petals and the actual petals set with set_m4_petals
+        Difference between the measured petals and the actual petals
+        set with set_m4_petals.
         Possible petals from the atmospheric residuals are not accounted here
         
         Returns
@@ -215,9 +223,16 @@ class Petalometer(Snapshotable):
         return diff - diff[0]
 
     @property
+    def estimated_petals(self):
+        return self._pc.estimated_petals
+
+
+"""     @property
     def across_islands_jumps(self):
         '''
         Measure OPD between sectors separated by a spider 
+        
+        See all_jumps() and compute_jumps()
         '''
         return self._jumps[::2]
 
@@ -226,20 +241,51 @@ class Petalometer(Snapshotable):
         '''
         Measured OPD between all sectors.
 
-        Even-th jumps correspond to the interference of a segment with itself, so
-        they should be nominally zero.
-        Odd-th jumps correspond to OPD across islands, what we are interested in. 
+        See compute_jumps() with parameter phase_difference_map() and
+        rotation_angle 
         '''
         return self._jumps
 
     def _compute_jumps_of_interferogram(self):
         r = self._model1.pupil_rotation_angle
         # TODO: replace 'image' with 'self.phase_difference_map'
-        image = self._i4.interferogram()
+        image = self.phase_difference_map()
         self._jumps = self.compute_jumps(image, r)
 
     @classmethod
     def compute_jumps(cls, image, r):
+        '''
+        Compute jumps between pupil sectors.
+
+        In the case of ELT, having six 60° circular sectors, 
+        the rotational shearing interferometer output pupil image is made of
+        12 sectors obtained by interfering the pupil with a copy of the pupil 
+        rotated by R degrees.   
+
+        The jumps are computed as median value of the interferogram in 
+
+        Even-th jumps correspond to the interference of a segment with itself, so
+        they should be nominally zero.
+        Odd-th jumps correspond to OPD across pupil islands, what we are interested in.
+        
+        This method is provided for offline computation of the jumps, in case
+        only the phase_difference_map is available and 
+        the Petalometer object is not valid anymore.
+        
+        Parameters
+        ----------
+        image: numpy masked array
+            interferometer on which 
+        
+        rotation_angle: float
+            rotation angle of the RSI  
+        
+        Returns
+        -------
+        jumps: numpy array (6)
+            jumpsdifference between measured petals and actual petals [nm]
+                 
+        '''
         angs = (90, 90 - r, 30, 30 - r, -30, -30 - r, -
                 90, -90 - r, -150, -150 - r, -210, -210 - r, -270)
         res = np.zeros(len(angs) - 1)
@@ -281,3 +327,90 @@ class Petalometer(Snapshotable):
         res = -1 * np.cumsum(self.across_islands_jumps)
         # return zero_mean(res, self.wavelength)
         return res
+ """
+
+
+class PetalComputer():
+
+    def __init__(self, interferogram, rotation_angle):
+        self._rot_angle = rotation_angle
+        self._interferogam = interferogram
+        self._compute_jumps_from_interferogram()
+
+    @property
+    def estimated_petals(self):
+        res = -1 * np.cumsum(self.across_islands_jumps)
+        # return zero_mean(res, self.wavelength)
+        return res
+
+    @property
+    def across_islands_jumps(self):
+        '''
+        Measure OPD between sectors separated by a spider 
+        
+        See all_jumps() and compute_jumps()
+        '''
+        return self._jumps[::2]
+
+    @property
+    def all_jumps(self):
+        '''
+        Measured OPD between all sectors.
+
+        See compute_jumps() with parameter phase_difference_map() and
+        rotation_angle 
+        '''
+        return self._jumps
+
+    def _compute_jumps_from_interferogram(self):
+        self._jumps = self.compute_jumps(self._interferogam, self._rot_angle)
+
+    @classmethod
+    def compute_jumps(cls, image, r):
+        '''
+        Compute jumps between pupil sectors.
+
+        In the case of ELT, having six 60° circular sectors, 
+        the rotational shearing interferometer output pupil image is made of
+        12 sectors obtained by interfering the pupil with a copy of the pupil 
+        rotated by R degrees.   
+
+        The jumps are computed as median value of the interferogram in 
+
+        Even-th jumps correspond to the interference of a segment with itself, so
+        they should be nominally zero.
+        Odd-th jumps correspond to OPD across pupil islands, what we are interested in.
+        
+        This method is provided for offline computation of the jumps, in case
+        only the phase_difference_map is available and 
+        the Petalometer object is not valid anymore.
+        
+        Parameters
+        ----------
+        image: numpy masked array
+            interferometer on which 
+        
+        rotation_angle: float
+            rotation angle of the RSI  
+        
+        Returns
+        -------
+        jumps: numpy array (6)
+            jumps difference between measured petals and actual petals [nm]
+                 
+        '''
+        angs = (90, 90 - r, 30, 30 - r, -30, -30 - r, -
+                90, -90 - r, -150, -150 - r, -210, -210 - r, -270)
+        res = np.zeros(len(angs) - 1)
+        for i in range(len(angs) - 1):
+            ifm = cls._mask_ifgram(image, (angs[i + 1], angs[i]))
+            res[i] = np.ma.median(ifm)
+        # res = wrap_around_zero(res * u.nm, self.wavelength)
+        return res * u.nm
+
+    @classmethod
+    def _mask_ifgram(cls, ifgram, angle_range):
+        smask1 = sector_mask(ifgram.shape,
+                             (angle_range[0], angle_range[1]))
+        mask = np.ma.mask_or(ifgram.mask, ~smask1)
+        return np.ma.masked_array(ifgram, mask=mask)

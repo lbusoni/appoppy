@@ -26,9 +26,9 @@ def main230519_petalometer_on_MORFEO_residuals_with_LWE(rot_angle=60,
         os.path.join(
             ROOT_DIR, TN_LWE,
             'long_exp_%sum_%sdeg.fits' % (wv_in_um, rot_angle)))
-    phase_screens = le.phase_screen()[100:]
+    phase_screens = le.input_opd()[100:]
     phase_correction = np.tile(
-        le.phase_correction_from_petalometer(), (phase_screens.shape[0], 1, 1))
+        le.opd_correction_from_reconstructed_phase_ave(), (phase_screens.shape[0], 1, 1))
     phase_screens_res = phase_screens - phase_correction
     std_res = phase_screens.std(axis=(1, 2))
     std_res_lwe = phase_screens_res.std(axis=(1, 2))
@@ -58,7 +58,7 @@ def main230525_estimate_noise_due_to_MORFEO_residuals_P50(
     le = LongExposurePetalometer.load(os.path.join(
         ROOT_DIR, TN_P50 + rho + '_' + theta,
         'long_exp_%sum_%sdeg.fits' % (wv_in_um, rot_angle)))
-    phase_screens = le.phase_screen()
+    phase_screens = le.input_opd()
     std_ao_ps = phase_screens.std(axis=(1, 2))
     plt.figure()
     plt.plot(std_ao_ps)
@@ -142,9 +142,9 @@ def main230531_petalometer_correction_on_P50_MORFEO_residuals():
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_24um_60deg_pet_200_30_m100_370_500_10.fits'))
-    phase_screens = le.phase_screen()[100:]
+    phase_screens = le.input_opd()[100:]
     phase_correction = np.tile(
-        le.phase_correction_from_petalometer(), (phase_screens.shape[0], 1, 1))
+        le.opd_correction_from_reconstructed_phase_ave(), (phase_screens.shape[0], 1, 1))
     phase_screens_res = phase_screens - phase_correction
     std_res = phase_screens.std(axis=(1, 2))
     std_res_pet = phase_screens_res.std(axis=(1, 2))
@@ -173,9 +173,9 @@ def main230531_petalometer_correction_on_P50_MORFEO_residuals_large_petals():
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_24um_60deg_pet_1200_m1000_3000_370_1500_20.fits'))
-    phase_screens = le.phase_screen()[100:]
+    phase_screens = le.input_opd()[100:]
     phase_correction = np.tile(
-        le.phase_correction_from_petalometer(),
+        le.opd_correction_from_reconstructed_phase_ave(),
         (phase_screens.shape[0], 1, 1))
     phase_screens_res = phase_screens - phase_correction
     std_res = phase_screens.std(axis=(1, 2))
@@ -349,9 +349,9 @@ def main230627_correction_on_MORFEO_residuals_with_petals_in_Ks():
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_2.2um_60deg_pet_200_30_m100_370_500_0.fits'))
-    phase_screens = le.phase_screen()[100:]
+    phase_screens = le.input_opd()[100:]
     phase_correction = np.tile(
-        le.phase_correction_from_petalometer(), (phase_screens.shape[0], 1, 1))
+        le.opd_correction_from_reconstructed_phase_ave(), (phase_screens.shape[0], 1, 1))
     phase_screens_res = phase_screens - phase_correction
     std_res = phase_screens.std(axis=(1, 2))
     std_res_lwe = phase_screens_res.std(axis=(1, 2))

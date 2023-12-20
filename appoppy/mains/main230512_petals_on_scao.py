@@ -70,8 +70,8 @@ class PetalsOnHIRESResiduals():
         le = LongExposurePetalometer.load(
             os.path.join(self.DATA_ROOT_DIR, self._tracking_number,
                          'long_exp.fits'))
-        correction_from_petalometer = le.phase_correction_from_petalometer()
-        ao_res_phase_screen = le.phase_screen()
+        correction_from_petalometer = le.opd_correction_from_reconstructed_phase_ave()
+        ao_res_phase_screen = le.input_opd()
         pet_res_phase_screen = []
         std_pet_res_phase_screen = []
         for ps in ao_res_phase_screen:

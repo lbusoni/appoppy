@@ -34,8 +34,8 @@ def main231214_ciaociao_on_MORFEO_residuals_with_one_100nm_piston_in_H():
     print('Difference between pistons:\n %s' % (
         np.array(petals_100) - np.array(petals_res)))
     
-    le_phase_screen = le.phase_screen()[1:]
-    le100_phase_screen = le100.phase_screen()[1:]
+    le_phase_screen = le.input_opd()[1:]
+    le100_phase_screen = le100.input_opd()[1:]
     le_stds = le_phase_screen.std(axis=(1, 2))
     le100_stds = le100_phase_screen.std(axis=(1, 2))
     plt.figure()
@@ -43,7 +43,7 @@ def main231214_ciaociao_on_MORFEO_residuals_with_one_100nm_piston_in_H():
     plt.plot(le100_stds, label='100 nm piston, mean std=%s' % le100_stds.mean())
     plt.ylabel('Std [nm]')
     correction = np.tile(
-        le100.phase_correction_from_petalometer(),
+        le100.opd_correction_from_reconstructed_phase_ave(),
         (le_phase_screen.shape[0], 1, 1))
     corrected_screens = le_phase_screen - correction
     corr_screen_stds = corrected_screens.std(axis=(1, 2))
