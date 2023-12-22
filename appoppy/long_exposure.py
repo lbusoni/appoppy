@@ -83,8 +83,8 @@ class LongExposurePetalometer(Snapshotable):
         self._pixelsize = self._pet.pixelsize.to_value(u.m)
         self._pet.sense_wavefront_jumps()
         sh = (self._niter,
-              self._pet.phase_difference_map.shape[0],
-              self._pet.phase_difference_map.shape[1])
+              self._pet.reconstructed_phase.shape[0],
+              self._pet.reconstructed_phase.shape[1])
         self._reconstructed_phase = np.ma.zeros(sh)
         self._meas_petals = np.zeros((self._niter, 6))
         self._input_opd = np.ma.zeros(sh)
@@ -94,10 +94,10 @@ class LongExposurePetalometer(Snapshotable):
             print("step %d" % self._pet.step_idx)
             self._pet.sense_wavefront_jumps()
             self._meas_petals[self._pet.step_idx] = self._pet.error_petals
-            self._reconstructed_phase[self._pet.step_idx] = self._pet.phase_difference_map
+            self._reconstructed_phase[self._pet.step_idx] = self._pet.reconstructed_phase
             self._input_opd[self._pet.step_idx] = self._pet.pupil_opd
             self._corrected_opd[self._pet.step_idx] = self._input_opd[self._pet.step_idx] - \
-                self._opd_correction(self._pet.phase_difference_map)
+                self._opd_correction(self._pet.reconstructed_phase)
             self._pet.advance_step_idx()
 
     def input_opd(self):

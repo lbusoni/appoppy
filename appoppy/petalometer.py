@@ -114,7 +114,7 @@ class Petalometer(Snapshotable):
         return self._model2.pupil_opd()
 
     @property
-    def phase_difference_map(self):
+    def reconstructed_phase(self):
         '''
         Map of phase difference between subapertures overlapped by the
         rotational shearing.
@@ -178,7 +178,7 @@ class Petalometer(Snapshotable):
         self._i4.acquire()
         if self._should_display:
             self._i4.display_interferogram()
-        self._pc = PetalComputer(self.phase_difference_map,
+        self._pc = PetalComputer(self.reconstructed_phase,
                                  self._model1.pupil_rotation_angle)
 
     def advance_step_idx(self):
@@ -227,115 +227,14 @@ class Petalometer(Snapshotable):
         return self._pc.estimated_petals
 
 
-"""     @property
-    def across_islands_jumps(self):
-        '''
-        Measure OPD between sectors separated by a spider 
-        
-        See all_jumps() and compute_jumps()
-        '''
-        return self._jumps[::2]
-
-    @property
-    def all_jumps(self):
-        '''
-        Measured OPD between all sectors.
-
-        See compute_jumps() with parameter phase_difference_map() and
-        rotation_angle 
-        '''
-        return self._jumps
-
-    def _compute_jumps_of_interferogram(self):
-        r = self._model1.pupil_rotation_angle
-        # TODO: replace 'image' with 'self.phase_difference_map'
-        image = self.phase_difference_map()
-        self._jumps = self.compute_jumps(image, r)
-
-    @classmethod
-    def compute_jumps(cls, image, r):
-        '''
-        Compute jumps between pupil sectors.
-
-        In the case of ELT, having six 60° circular sectors, 
-        the rotational shearing interferometer output pupil image is made of
-        12 sectors obtained by interfering the pupil with a copy of the pupil 
-        rotated by R degrees.   
-
-        The jumps are computed as median value of the interferogram in 
-
-        Even-th jumps correspond to the interference of a segment with itself, so
-        they should be nominally zero.
-        Odd-th jumps correspond to OPD across pupil islands, what we are interested in.
-        
-        This method is provided for offline computation of the jumps, in case
-        only the phase_difference_map is available and 
-        the Petalometer object is not valid anymore.
-        
-        Parameters
-        ----------
-        image: numpy masked array
-            interferometer on which 
-        
-        rotation_angle: float
-            rotation angle of the RSI  
-        
-        Returns
-        -------
-        jumps: numpy array (6)
-            jumpsdifference between measured petals and actual petals [nm]
-                 
-        '''
-        angs = (90, 90 - r, 30, 30 - r, -30, -30 - r, -
-                90, -90 - r, -150, -150 - r, -210, -210 - r, -270)
-        res = np.zeros(len(angs) - 1)
-        for i in range(len(angs) - 1):
-            ifm = cls._mask_ifgram(image, (angs[i + 1], angs[i]))
-            res[i] = np.ma.median(ifm)
-        # res = wrap_around_zero(res * u.nm, self.wavelength)
-        return res * u.nm
-
-    @classmethod
-    def _mask_ifgram(cls, ifgram, angle_range):
-        smask1 = sector_mask(ifgram.shape,
-                             (angle_range[0], angle_range[1]))
-        mask = np.ma.mask_or(ifgram.mask, ~smask1)
-        return np.ma.masked_array(ifgram, mask=mask)
-
-    def _jumps_to_petals_matrix(self):
-        # last line forces global piston to zero
-        mm = np.array([
-            [-1, 0, 0, 0, 0, 1],
-            [1, -1, 0, 0, 0, 0],
-            [0, 1, -1, 0, 0, 0],
-            [0, 0, 1, -1, 0, 0],
-            [0, 0, 0, 1, -1, 0],
-            [0, 0, 0, 0, 1, -1],
-            [1, 1, 1, 1, 1, 1]
-        ])
-        return np.linalg.pinv(mm)
-
-    @property
-    def estimated_petals_wrong(self):
-        return wrap_around_zero(
-            np.dot(self._jumps_to_petals_matrix(),
-                   np.append(self.across_islands_jumps, 0)),
-            self.wavelength)
-
-    @property
-    def estimated_petals(self):
-        res = -1 * np.cumsum(self.across_islands_jumps)
-        # return zero_mean(res, self.wavelength)
-        return res
- """
 
 
 class PetalComputer():
 
-    def __init__(self, interferogram, rotation_angle):
+    def __init__(self, reconstructed_phase, rotation_angle):
         self._rot_angle = rotation_angle
-        self._interferogam = interferogram
-        self._compute_jumps_from_interferogram()
+        self._reconstructed_phase = reconstructed_phase
+        self._compute_jumps_from_reconstructed_phase()
 
     @property
     def estimated_petals(self):
@@ -357,13 +256,14 @@ class PetalComputer():
         '''
         Measured OPD between all sectors.
 
-        See compute_jumps() with parameter phase_difference_map() and
+        See compute_jumps() with parameter reconstructed_phase() and
         rotation_angle 
         '''
         return self._jumps
 
-    def _compute_jumps_from_interferogram(self):
-        self._jumps = self.compute_jumps(self._interferogam, self._rot_angle)
+    def _compute_jumps_from_reconstructed_phase(self):
+        self._jumps = self.compute_jumps(
+            self._reconstructed_phase, self._rot_angle)
 
     @classmethod
     def compute_jumps(cls, image, r):
@@ -382,7 +282,7 @@ class PetalComputer():
         Odd-th jumps correspond to OPD across pupil islands, what we are interested in.
         
         This method is provided for offline computation of the jumps, in case
-        only the phase_difference_map is available and 
+        only the reconstructed_phase is available and 
         the Petalometer object is not valid anymore.
         
         Parameters
