@@ -1,6 +1,6 @@
 
 
-from appoppy.elt_aperture import PUPIL_MASK_480, PUPIL_MASK_480_PHASE_C_SPIDER23, PUPIL_MASK_480_PHASE_C_SPIDER23_HIRES
+from appoppy.elt_aperture import PUPIL_MASK_480, PUPIL_MASK_480_PHASE_C_SPIDER23
 from appoppy.maory_residual_wfe import PASSATASimulationConverter, restore_residual_wavefront
 
 

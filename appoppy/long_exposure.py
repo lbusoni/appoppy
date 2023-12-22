@@ -4,6 +4,7 @@ from pathlib import Path
 import os
 from appoppy.ao_residuals import AOResidual
 from appoppy.elt_for_petalometry import EltForPetalometry
+from appoppy.package_data import data_root_dir
 from appoppy.petalometer import PetalComputer, Petalometer
 from appoppy.gif_animator import Gif2DMapsAnimator
 from astropy.io import fits
@@ -21,6 +22,16 @@ class LepSnapshotEntry(object):
     PETALS = 'PETALS'
     WAVELENGTH = 'WAVELENGTH'
     
+
+def long_exposure_tracknum(tn, code):
+    return "%s_%s" % (tn, code)
+
+
+def long_exposure_filename(lep_tracknum):
+    return os.path.join(data_root_dir(),
+                        'long_exposure',
+                        lep_tracknum,
+                        'long_exp.fits')
 
 
 class LongExposurePetalometer(Snapshotable):
@@ -312,7 +323,8 @@ class LongExposurePetalometer(Snapshotable):
         snapshot.update(self._pet.get_snapshot(SnapshotPrefix.PETALOMETER))
         return Snapshotable.prepend(prefix, snapshot)
 
-    def save(self, filename):
+    def save(self, lep_tracknum):
+        filename = long_exposure_filename(lep_tracknum)
         rootpath = Path(filename).parent.absolute()
         rootpath.mkdir(parents=True, exist_ok=True)
         hdr = Snapshotable.as_fits_header(self.get_snapshot('LPE'))
@@ -325,7 +337,8 @@ class LongExposurePetalometer(Snapshotable):
         fits.append(filename, self.corrected_opd().data)
 
     @staticmethod
-    def load(filename):
+    def load(lep_tracknum):
+        filename = long_exposure_filename(lep_tracknum)
         hdr = fits.getheader(filename)
         try:
             res = hdr['LPE.' + LepSnapshotEntry.WAVELENGTH]
