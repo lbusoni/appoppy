@@ -100,10 +100,10 @@ class PASSATASimulationConverter():
         fits.writeto(fname_fits, res_wfs.data, header)
         fits.append(fname_fits, mask.astype(int))
 
-    def create_none_tracknum(self):
-        mask = np.zeros((500, 64, 64), dtype=bool)
+    def create_none_tracknum(self, niter=500):
+        mask = np.zeros((niter, 64, 64), dtype=bool)
         res_wf = np.ma.masked_array(
-            np.zeros((500, 64, 64)),
+            np.zeros((niter, 64, 64)),
             mask=mask)
         header = fits.Header()
         header[AoResSnapshotEntry.TRACKING_NUMBER] = 'None'
@@ -202,7 +202,7 @@ class MaoryResidualWavefront(ArrayOpticalElement, Snapshotable):
         self._average_on = average_on
         self._step_idx = np.maximum(
             0, np.minimum(self._start_from, self._nframes))
-        self.amplitude = (~self._res_wf[self._START_FROM].mask).astype(int)
+        self.amplitude = (~self._res_wf[self._start_from].mask).astype(int)
         super(MaoryResidualWavefront, self).__init__(
             transmission=self.amplitude, pixelscale=self._pxscale, **kwargs)
 
