@@ -92,7 +92,7 @@ class Gif2DMapsAnimator():
         if colorbar:
             plt.colorbar()
         plt.title(title)
-        plt.show()
+        plt.show(block=False)
 
     def _file_name(self, idx):
         return os.path.join(self._jpg_root, '%04d.jpeg' % idx)
