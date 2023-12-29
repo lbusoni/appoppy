@@ -39,7 +39,7 @@ def _create_long_exposure_generic(tn,
         wavelength=wavelength,
         n_iter=n_iter)
     le.run()
-    le.save(long_exposure_tracknum(tn, code))
+    le.save()
     return le
 
 

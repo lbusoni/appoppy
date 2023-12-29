@@ -34,6 +34,11 @@ def long_exposure_filename(lep_tracknum):
                         'long_exp.fits')
 
 
+def animation_folder(lep_tracknum):
+    return os.path.join(data_root_dir(),
+                        'appoppy_anim',
+                        lep_tracknum)
+
 class LongExposurePetalometer(Snapshotable):
 
     def __init__(self,
@@ -43,7 +48,6 @@ class LongExposurePetalometer(Snapshotable):
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  wavelength=2.2e-6 * u.m,
                  lwe_speed=None,
-                 jpeg_root_folder=None,
                  start_from_step=100,
                  n_iter=1000):
         self._start_from_step = start_from_step
@@ -52,12 +56,7 @@ class LongExposurePetalometer(Snapshotable):
         self._petals = petals
         self._wavelength = wavelength
         self._lwe_speed = lwe_speed
-        if jpeg_root_folder is None:
-            home = str(Path.home())
-            jpeg_root_folder = os.path.join(
-                home, 'appoppy_anim',
-                lpe_tracking_number if lpe_tracking_number else "none")
-        self._jpg_root = jpeg_root_folder
+        self._jpg_root = animation_folder(lpe_tracking_number)
         self._phase_diff_cumave = None
         self._reconstructed_phase = None
         self._meas_petals = None
@@ -323,8 +322,8 @@ class LongExposurePetalometer(Snapshotable):
         snapshot.update(self._pet.get_snapshot(SnapshotPrefix.PETALOMETER))
         return Snapshotable.prepend(prefix, snapshot)
 
-    def save(self, lep_tracknum):
-        filename = long_exposure_filename(lep_tracknum)
+    def save(self):
+        filename = long_exposure_filename(self._lpe_tracking_number)
         rootpath = Path(filename).parent.absolute()
         rootpath.mkdir(parents=True, exist_ok=True)
         hdr = Snapshotable.as_fits_header(self.get_snapshot('LPE'))
