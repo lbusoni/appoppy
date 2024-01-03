@@ -65,24 +65,25 @@ class AppoppyLongExposureIntegrationTest(unittest.TestCase):
         self._logger.info('Input opd %g' % lep.input_opd_std())
         self._logger.info('Corr opd %g' % lep.corrected_opd_std())
         lep.save()
-        lep.animate_corrected_opd()
-        lep.animate_reconstructed_phase()
-        self.assertAlmostEqual(45.7, lep.input_opd_std(), delta=1)
-        self.assertAlmostEqual(0, lep.corrected_opd_std(), delta=1)
-        self.assertAlmostEqual(
-            0,
-            lep.corrected_opd_from_reconstructed_phase_ave()[0].std(),
-            delta=1)
 
         lep2 = LongExposurePetalometer.load(self._tn)
         np.testing.assert_allclose(
             lep.reconstructed_phase(),
             lep2.reconstructed_phase())
 
-        petals, jumps = lep2.petals_from_reconstructed_phase_map(
-            lep2.reconstructed_phase()[0])
+        lep2.animate_corrected_opd()
+        lep2.animate_reconstructed_phase()
+
+        self.assertAlmostEqual(45.7, lep2.input_opd_std(), delta=1)
+        self.assertAlmostEqual(0, lep2.corrected_opd_std(), delta=1)
+        self.assertAlmostEqual(
+            0,
+            lep2.corrected_opd_from_reconstructed_phase_ave()[0].std(),
+            delta=1)
+
+        petals = lep2.petals()[0]
         self._logger.info('Petals %s' % petals)
-        self.assertAlmostEqual(123, (petals[1]-petals[0]).to_value(u.nm))
+        self.assertAlmostEqual(123, (petals[1]-petals[0]))
         self.assertEqual(1, lep2.time_step)
 
 

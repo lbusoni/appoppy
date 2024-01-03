@@ -93,7 +93,7 @@ class LongExposurePetalometer(Snapshotable):
         for i in range(self._niter):
             print("step %d" % self._pet.step_idx)
             self._pet.sense_wavefront_jumps()
-            self._meas_petals[self._pet.step_idx] = self._pet.difference_between_estimated_petals_and_m4_petals
+            self._meas_petals[self._pet.step_idx] = self._pet.estimated_petals
             self._reconstructed_phase[self._pet.step_idx] = self._pet.reconstructed_phase
             self._input_opd[self._pet.step_idx] = self._pet.pupil_opd
             self._corrected_opd[self._pet.step_idx] = self._input_opd[self._pet.step_idx] - \
@@ -190,25 +190,21 @@ class LongExposurePetalometer(Snapshotable):
 
     def petals(self):
         '''
-        Petals error
+        Estimated petals
         
-        Returns petals error measured at every temporal step
+        Returns the estimated petals at every temporal step
         The global piston is removed, i.e. mean(petals, axis=1) == 0 
-        
-        ! It is the petal error, i.e. the difference between the petals
-        set using M4 and the measured ones. Not really useful, since the 
-        AO residual or other aberrations can also create petals that 
-        the WFS correctly senses.
         
         Returns
         -------
         petals: numpy array (n_iter, 6)
-            petals measurement discrepancy as a function of time [nm]
+            esitmated petals as a function of time [nm]
 
         '''
         if self._meas_petals_no_global_pist is None:
             self._meas_petals_no_global_pist = self._meas_petals - np.broadcast_to(
                 self._meas_petals.mean(axis=1), (6, self._niter)).T
+
         return self._meas_petals_no_global_pist
 
     def petals_cumave(self):
