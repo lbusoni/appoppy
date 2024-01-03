@@ -96,14 +96,14 @@ def main230525_petalometer_on_MORFEO_residuals_P50_one_frame(
         wavelength=wv)
     print(
         '\n\nError with small petals: %s'
-        % pet1.error_petals)
+        % pet1.difference_between_estimated_petals_and_m4_petals)
     print('\nError with large petals: %s'
-          % pet2.error_petals)
+          % pet2.difference_between_estimated_petals_and_m4_petals)
     print(
         '\n\nRelative error with small petals: %s'
-        % (pet1.error_petals / pet1.petals))
+        % (pet1.difference_between_estimated_petals_and_m4_petals / pet1.petals))
     print('\nRelative error with large petals: %s'
-          % (pet2.error_petals / pet2.petals))
+          % (pet2.difference_between_estimated_petals_and_m4_petals / pet2.petals))
     return pet1, pet2        
 
     

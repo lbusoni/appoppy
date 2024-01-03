@@ -34,8 +34,8 @@ def error(use_simulated_residual_wfe=True,
                         tracking_number=tracking_number,
                         petals=petals,
                         rotation_angle=rotation_angle)
-        res.append(p.error_petals)
-        print(p.error_petals)
+        res.append(p.difference_between_estimated_petals_and_m4_petals)
+        print(p.difference_between_estimated_petals_and_m4_petals)
     ret = np.array(res)
     print(ret.std())
     return ret

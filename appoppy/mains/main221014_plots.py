@@ -76,7 +76,7 @@ def no_turbolence():
     np.round(pet.all_jumps)
     np.round(pet.estimated_petals - pet.estimated_petals[0])
     np.round(pet.error_jumps)
-    np.round(pet.error_petals)
+    np.round(pet.difference_between_estimated_petals_and_m4_petals)
 
 
 # os.path.join('/Users', 'lbusoni', 'Downloads', 'anim')

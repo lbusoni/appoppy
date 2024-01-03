@@ -24,7 +24,7 @@ class PetalometerTest(unittest.TestCase):
         np.testing.assert_allclose(np.zeros(6),
                                    pet.estimated_petals.to_value(u.nm), atol=1e-10)
         np.testing.assert_allclose(np.zeros(6),
-                                   pet.error_petals.to_value(u.nm), atol=1e-10)
+                                   pet.difference_between_estimated_petals_and_m4_petals.to_value(u.nm), atol=1e-10)
         self.assertAlmostEqual(0, pet.pupil_opd.mean())
         self.assertAlmostEqual(0, pet.pupil_opd.std())
 

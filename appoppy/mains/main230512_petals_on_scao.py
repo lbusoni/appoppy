@@ -48,13 +48,16 @@ class PetalsOnHIRESResiduals():
                           rotation_angle=self._rot_angle)
         print('\n\nEstimated petals with SCAO residuals ON: %s'
               % pet1.estimated_petals)
-        print('\nErrors with SCAO residuals ON: %s' % pet1.error_petals)
+        print('\nErrors with SCAO residuals ON: %s' %
+              pet1.difference_between_estimated_petals_and_m4_petals)
         print('\nErrors with SCAO residuals ON (without first term subtraction): %s'
               % (pet1.estimated_petals - pet1.petals))
         print('\nJumps on odd segments with SCAO residuals ON: %s'
               % pet1.all_jumps[1::2])
-        print('\nStd of errors with SCAO residuals ON: %s' % pet1.error_petals.std())
-        print('\nErrors with SCAO residuals OFF: %s' % pet2.error_petals)
+        print('\nStd of errors with SCAO residuals ON: %s' %
+              pet1.difference_between_estimated_petals_and_m4_petals.std())
+        print('\nErrors with SCAO residuals OFF: %s' %
+              pet2.difference_between_estimated_petals_and_m4_petals)
         plt.clf()
         pet1._i4.display_interferogram()
         plt.figure()

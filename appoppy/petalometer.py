@@ -205,18 +205,18 @@ class Petalometer(Snapshotable):
 #        return (self._expected_jumps - self._pc.all_jumps).to(u.nm)
 
     @property
-    def error_petals(self):
+    def difference_between_estimated_petals_and_m4_petals(self):
         '''
-        Petal estimate error
-        
-        Difference between the measured petals and the actual petals
+        Difference between the estimateded petals and the petals
         set with set_m4_petals.
-        Possible petals from the atmospheric residuals are not accounted here
         
+        Warning:  AO residual or other aberrations can also 
+        create petals that the WFS correctly senses.
+
         Returns
         -------
-        error_petals: numpy array (6)
-            difference between measured petals and actual petals [nm]
+        difference: numpy array (6)
+            difference between estimated petals and M4 petals [nm]
         '''
         diff = self.estimated_petals - self.petals
         return diff - diff[0]
