@@ -66,7 +66,8 @@ class LongExposurePetalometer(Snapshotable):
         self._lpe_tracking_number = lpe_tracking_number
         self._passata_tracking_number = passata_tracking_number
         if self._passata_tracking_number:
-            self._aores = AOResidual(self._passata_tracking_number)
+            aores = AOResidual(self._passata_tracking_number)
+            self._time_step = aores.time_step
         self._pet = None
 
 
@@ -98,6 +99,10 @@ class LongExposurePetalometer(Snapshotable):
             self._corrected_opd[self._pet.step_idx] = self._input_opd[self._pet.step_idx] - \
                 self._opd_correction(self._pet.reconstructed_phase)
             self._pet.advance_step_idx()
+
+    @property
+    def time_step(self):
+        return self._time_step
 
     def input_opd(self):
         '''
@@ -182,14 +187,6 @@ class LongExposurePetalometer(Snapshotable):
         '''
         return self.corrected_opd().std(axis=(1, 2)).mean()
 
-    # def phase_screen(self):
-    #     return self._aores.phase_screen
-    #
-    # def phase_screen_cumave(self):
-    #     return self._aores.phase_screen_cumave
-    #
-    # def phase_screen_ave(self):
-    #     return self._aores.phase_screen_ave
 
     def petals(self):
         '''
@@ -281,7 +278,7 @@ class LongExposurePetalometer(Snapshotable):
         Gif2DMapsAnimator(
             os.path.join(self._jpg_root, label),
             what,
-            deltat=self._aores.time_step,
+            deltat=self.time_step,
             pixelsize=self._pixelsize, **kwargs).make_gif(step=step, cmap=cmap)
 
     def animate_reconstructed_phase(self, vminmax=(-1100, 1100), remove_jpg=True):
@@ -374,8 +371,8 @@ class LongExposurePetalometer(Snapshotable):
 
     def plot_petals(self):
         t = np.arange(0,
-                      self._niter * self._aores.time_step,
-                      self._aores.time_step)
+                      self._niter * self.time_step,
+                      self.time_step)
 
         dd = self.petals()
         plt.figure()

@@ -249,7 +249,7 @@ def _plot_stdev_residual(le, title=''):
     std_corr_inst = _stdev_after_transient(le.corrected_opd())
     std_corr_long = _stdev_after_transient(
         le.corrected_opd_from_reconstructed_phase_ave())
-    timev = np.arange(len(std_input)) * le._aores.time_step
+    timev = np.arange(len(std_input)) * le.time_step
     plt.figure()
     plt.plot(timev, std_input, label=r'Petalometer Off $\sqrt{\sigma_{off}}$')
     plt.plot(timev, std_corr_inst,

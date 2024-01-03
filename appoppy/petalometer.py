@@ -3,7 +3,6 @@ import numpy as np
 from appoppy.phase_shift_interferometer import PhaseShiftInterferometer
 from appoppy.elt_for_petalometry import EltForPetalometry
 from appoppy.mask import sector_mask
-from appoppy.circular_math import wrap_around_zero
 import logging
 from appoppy.snapshotable import SnapshotPrefix, Snapshotable
 from arte.utils.timestamp import Timestamp
