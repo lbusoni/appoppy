@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from appoppy.long_exposure import LongExposurePetalometer
+from appoppy.long_exposure_simulation import LongExposureSimulation
 
 ROOT_DIR = '/Users/giuliacarla/Documents/INAF/Lavoro/Progetti/MORFEO/Analysis/Petalometer/CiaoCiaoWFS/analysis/data/from_appoppy/'
 MORFEO_55 = '20231209_202232.0_coo55.0_0.0'
@@ -12,11 +12,11 @@ def main231214_ciaociao_on_MORFEO_residuals_with_one_100nm_piston_in_H():
     Measure and compensate for petals on MORFEO residuals that include one
     injected piston of 100 nm. Sensing wavelength is 1.65 um.
     '''
-    le100 = LongExposurePetalometer.load(
+    le100 = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, MORFEO_55,
             'long_exp_1.65um_60deg_pet_0_0_0_0_100_0.fits'))
-    le = LongExposurePetalometer.load(
+    le = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, MORFEO_55,
             'long_exp_1.65um_60deg.fits'))

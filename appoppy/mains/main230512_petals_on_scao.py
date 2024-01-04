@@ -2,7 +2,7 @@ import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
 from appoppy.petalometer import Petalometer
-from appoppy.long_exposure import LongExposurePetalometer
+from appoppy.long_exposure_simulation import LongExposureSimulation
 import os
 
 
@@ -70,7 +70,7 @@ class PetalsOnHIRESResiduals():
         Petals are measured from temporal average of AO residuals (i.e. from 
         long exposure of petalometer detector). 
         '''
-        le = LongExposurePetalometer.load(
+        le = LongExposureSimulation.load(
             os.path.join(self.DATA_ROOT_DIR, self._tracking_number,
                          'long_exp.fits'))
         correction_from_petalometer = le.opd_correction_from_reconstructed_phase_ave()

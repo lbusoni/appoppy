@@ -1,6 +1,6 @@
 import numpy as np
 import astropy.units as u
-from appoppy.long_exposure import LongExposurePetalometer
+from appoppy.long_exposure_simulation import LongExposureSimulation
 
 ROOT_DIR = '/Users/giuliacarla/Documents/INAF/Lavoro/Progetti/MORFEO/Petalometer/CiaoCiaoWFS/analysis/data/from_appoppy/'
 ROOT_DIR = '/Users/lbusoni/Library/CloudStorage/GoogleDrive-lorenzo.busoni@inaf.it/Il mio Drive/adopt/Varie/CiaoCiaoWFS/analysis/data/from_appoppy/'
@@ -11,7 +11,7 @@ TN_P50 = '20210511_144618.0_coo'
 
 
 def main230607_long_exposure_MORFEO_residuals_and_small_petals():
-    le = LongExposurePetalometer(
+    le = LongExposureSimulation(
         tracking_number='20210511_144618.0_coo0.0_0.0', rot_angle=60,
         petals=np.array([200, 30, -100, 370, 500, 0]) * u.nm,
         wavelength=24e-6 * u.m)
@@ -20,7 +20,7 @@ def main230607_long_exposure_MORFEO_residuals_and_small_petals():
 
 
 def main230607_long_exposure_MORFEO_residuals_and_large_petals():
-    le = LongExposurePetalometer(
+    le = LongExposureSimulation(
         tracking_number='20210511_144618.0_coo0.0_0.0', rot_angle=60,
         petals=np.array([1200, -1000, 3000, 370, 1500, 0]) * u.nm,
         wavelength=24e-6 * u.m)
@@ -29,7 +29,7 @@ def main230607_long_exposure_MORFEO_residuals_and_large_petals():
 
 
 def main230609_long_exposure_MORFEO_residuals_and_petals_for_plot():
-    le = LongExposurePetalometer(
+    le = LongExposureSimulation(
         tracking_number='20210511_144618.0_coo0.0_0.0', rot_angle=20,
         petals=np.array([500, 400, -200, 300, -100, 0]) * u.nm,
         wavelength=24e-6 * u.m)
@@ -38,7 +38,7 @@ def main230609_long_exposure_MORFEO_residuals_and_petals_for_plot():
 
 
 def main230623_long_exposure_MORFEO_residuals_and_LWE():
-    le = LongExposurePetalometer(
+    le = LongExposureSimulation(
         tracking_number=TN_LWE, rot_angle=60,
         wavelength=24e-6 * u.m)
     le.run()
@@ -46,7 +46,7 @@ def main230623_long_exposure_MORFEO_residuals_and_LWE():
 
 
 def main230626_long_exposure_MORFEO_residuals_and_LWE_1600():
-    le = LongExposurePetalometer(
+    le = LongExposureSimulation(
         tracking_number=TN_LWE, rot_angle=60,
         wavelength=1.60e-6 * u.m)
     le.run()
@@ -54,7 +54,7 @@ def main230626_long_exposure_MORFEO_residuals_and_LWE_1600():
 
 
 def main230626_long_exposure_MORFEO_residuals_and_LWE_1500():
-    le = LongExposurePetalometer(
+    le = LongExposureSimulation(
         tracking_number=TN_LWE, rot_angle=60,
         wavelength=1.50e-6 * u.m)
     le.run()
@@ -62,7 +62,7 @@ def main230626_long_exposure_MORFEO_residuals_and_LWE_1500():
 
 
 def main230627_long_exposure_MORFEO_residuals_and_one_petals():
-    le = LongExposurePetalometer(
+    le = LongExposureSimulation(
         tracking_number='20210511_144618.0_coo0.0_0.0', rot_angle=60,
         petals=np.array([800, 0, 0, 0, 0, 0]) * u.nm,
         wavelength=2.2e-6 * u.m)
@@ -72,7 +72,7 @@ def main230627_long_exposure_MORFEO_residuals_and_one_petals():
 
 def main231213_long_exposure_MORFEO_residuals_no_petals(
         wavelength=2.2e-6 * u.m):
-    le = LongExposurePetalometer(
+    le = LongExposureSimulation(
         tracking_number='20231209_202232.0_coo55.0_0.0', rot_angle=60,
         wavelength=wavelength)
     le.run()
@@ -81,7 +81,7 @@ def main231213_long_exposure_MORFEO_residuals_no_petals(
 
 def main231213_long_exposure_MORFEO_residuals_one_100nm_piston(
         wavelength=2.2e-6 * u.m):
-    le = LongExposurePetalometer(
+    le = LongExposureSimulation(
         tracking_number='20231209_202232.0_coo55.0_0.0', rot_angle=60,
         petals=np.array([0, 0, 0, 0, 100, 0]) * u.nm,
         wavelength=wavelength)

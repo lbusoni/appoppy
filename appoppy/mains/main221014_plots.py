@@ -3,7 +3,7 @@ import numpy as np
 from astropy import units as u
 import matplotlib.pyplot as plt
 from appoppy.elt_for_petalometry import EltForPetalometry
-from appoppy.long_exposure import LongExposurePetalometer
+from appoppy.long_exposure_simulation import LongExposureSimulation
 
 
 def main_plot_pupil():
@@ -83,7 +83,7 @@ def no_turbolence():
 
 
 def petal_estimate_55():
-    soi = LongExposurePetalometer.load(
+    soi = LongExposureSimulation.load(
         '/Users/lbusoni/Downloads/anim/soi55.fits')
     eopd, epet, ejump = soi.petals_from_phase_difference_ave()
 

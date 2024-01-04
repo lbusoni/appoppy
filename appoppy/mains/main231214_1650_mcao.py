@@ -2,7 +2,8 @@
 import os
 import numpy as np
 from astropy import units as u
-from appoppy.long_exposure import LongExposurePetalometer, long_exposure_filename, long_exposure_tracknum
+from appoppy.simulation_results import SimulationResults
+from appoppy.long_exposure_simulation import LongExposureSimulation, long_exposure_filename, long_exposure_tracknum
 import matplotlib.pyplot as plt
 from arte.utils.marechal import wavefront_rms_2_strehl_ratio
 from arte.utils.quadratic_sum import quadraticSum
@@ -30,7 +31,7 @@ def _create_long_exposure_generic(tn,
                                   petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                                   wavelength=1650*u.nm,
                                   n_iter=1000):
-    le = LongExposurePetalometer(
+    le = LongExposureSimulation(
         long_exposure_tracknum(tn, code),
         tn,
         rot_angle=rot_angle,
@@ -219,13 +220,11 @@ def _analyze_long_exposure(tracknum, code):
     '''
     Measure and compensate for petals on MORFEO residuals
     '''
-    le = LongExposurePetalometer.load(long_exposure_tracknum(tracknum, code))
+    le = SimulationResults.load(long_exposure_tracknum(tracknum, code))
     std_input = le.input_opd()[20:].std(axis=(1, 2))
     std_corr_inst = le.corrected_opd()[20:].std(axis=(1, 2))
     std_corr_long = le.corrected_opd_from_reconstructed_phase_ave()[
         20:].std(axis=(1, 2))
-    petals, jumps = le.petals_from_reconstructed_phase_map(
-        le.reconstructed_phase_ave())
     _plot_stdev_residual(le, title="%s %s" % (tracknum, code))
     print('\nMean of MORFEO residuals stds: %s' % std_input.mean())
     print(
@@ -234,8 +233,12 @@ def _analyze_long_exposure(tracknum, code):
     print(
         'Mean of MORFEO residuals (with short exposure petal correction) stds: %s'
         % std_corr_inst.mean())
+
+    petals, jumps = le.petals_from_reconstructed_phase_map(
+        le.reconstructed_phase_ave())
     print('\nMeasured petals: %s' % petals)
     print('Measured jumps: %s' % jumps[::2])
+
     return le
 
 

@@ -5,13 +5,14 @@ import tempfile
 import unittest
 import numpy as np
 from astropy import units as u
-from appoppy.long_exposure import LongExposurePetalometer, animation_folder
+from appoppy.simulation_results import SimulationResults
+from appoppy.long_exposure_simulation import LongExposureSimulation, animation_folder
 from appoppy.maory_residual_wfe import PASSATASimulationConverter
 from appoppy.package_data import ROOT_DIR_KEY
 import shutil
 
 
-class AppoppyLongExposureIntegrationTest(unittest.TestCase):
+class SimulationIntegrationTest(unittest.TestCase):
 
     def setUp(self):
         self._setUpBasicLogging()
@@ -46,7 +47,6 @@ class AppoppyLongExposureIntegrationTest(unittest.TestCase):
                       'passata_simulations_converted'))
         shutil.rmtree(animation_folder(self._tn))
 
-
     def test_call_all(self):
 
         self._tn = 'foo_0000'
@@ -55,37 +55,36 @@ class AppoppyLongExposureIntegrationTest(unittest.TestCase):
         print(self._root_dir)
         psc = PASSATASimulationConverter()
         psc.create_none_tracknum(niter=5)
-        lep = LongExposurePetalometer(self._tn,
-                                      aores_tn,
-                                      petals=np.array(
-                                          [0, 123, 0, 0, 0, 0]) * u.nm,
-                                      start_from_step=0,
-                                      n_iter=4)
+        lep = LongExposureSimulation(self._tn,
+                                     aores_tn,
+                                     petals=np.array(
+                                         [0, 123, 0, 0, 0, 0]) * u.nm,
+                                     start_from_step=0,
+                                     n_iter=4)
         lep.run()
-        self._logger.info('Input opd %g' % lep.input_opd_std())
-        self._logger.info('Corr opd %g' % lep.corrected_opd_std())
         lep.save()
 
-        lep2 = LongExposurePetalometer.load(self._tn)
+        sr = SimulationResults.load(self._tn)
+        self._logger.info('Input opd %g' % sr.input_opd_std())
+        self._logger.info('Corr opd %g' % sr.corrected_opd_std())
         np.testing.assert_allclose(
-            lep.reconstructed_phase(),
-            lep2.reconstructed_phase())
+            lep._reconstructed_phase,
+            sr.reconstructed_phase())
 
-        lep2.animate_corrected_opd()
-        lep2.animate_reconstructed_phase()
+        sr.animate_corrected_opd()
+        sr.animate_reconstructed_phase()
 
-        self.assertAlmostEqual(45.7, lep2.input_opd_std(), delta=1)
-        self.assertAlmostEqual(0, lep2.corrected_opd_std(), delta=1)
+        self.assertAlmostEqual(45.7, sr.input_opd_std(), delta=1)
+        self.assertAlmostEqual(0, sr.corrected_opd_std(), delta=1)
         self.assertAlmostEqual(
             0,
-            lep2.corrected_opd_from_reconstructed_phase_ave()[0].std(),
+            sr.corrected_opd_from_reconstructed_phase_ave()[0].std(),
             delta=1)
 
-        petals = lep2.petals()[0]
+        petals = sr.petals()[0]
         self._logger.info('Petals %s' % petals)
         self.assertAlmostEqual(123, (petals[1]-petals[0]))
-        self.assertEqual(1, lep2.time_step)
-
+        self.assertEqual(1, sr.time_step)
 
     def _temp_fname(self):
         return os.path.join(tempfile.gettempdir(), 'lep.fits')

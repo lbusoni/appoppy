@@ -242,6 +242,11 @@ class PetalComputer():
         return res
 
     @property
+    def estimated_petals_zero_mean(self):
+        pp = self.estimated_petals
+        return pp - pp.mean()
+
+    @property
     def across_islands_jumps(self):
         '''
         Measure OPD between sectors separated by a spider 

@@ -1,7 +1,7 @@
 import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
-from appoppy.long_exposure import LongExposurePetalometer
+from appoppy.long_exposure_simulation import LongExposureSimulation
 import os
 from appoppy.petalometer import Petalometer
 from appoppy.ao_residuals import AOResidual
@@ -22,7 +22,7 @@ def main230519_petalometer_on_MORFEO_residuals_with_LWE(rot_angle=60,
     Measure and compensate for petals on MORFEO residuals that include LWE and
     its correction.
     '''
-    le = LongExposurePetalometer.load(
+    le = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_LWE,
             'long_exp_%sum_%sdeg.fits' % (wv_in_um, rot_angle)))
@@ -55,7 +55,7 @@ def main230525_estimate_noise_due_to_MORFEO_residuals_P50(
     '''
     Estimate the contribution of MORFEO residuals to petals signal.
     '''
-    le = LongExposurePetalometer.load(os.path.join(
+    le = LongExposureSimulation.load(os.path.join(
         ROOT_DIR, TN_P50 + rho + '_' + theta,
         'long_exp_%sum_%sdeg.fits' % (wv_in_um, rot_angle)))
     phase_screens = le.input_opd()
@@ -138,7 +138,7 @@ def main230531_plot_structure_function_of_AO_LWE_maps(step_map=500,
 def main230531_petalometer_correction_on_P50_MORFEO_residuals():
     '''
     '''
-    le = LongExposurePetalometer.load(
+    le = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_24um_60deg_pet_200_30_m100_370_500_10.fits'))
@@ -169,7 +169,7 @@ def main230531_petalometer_correction_on_P50_MORFEO_residuals():
 def main230531_petalometer_correction_on_P50_MORFEO_residuals_large_petals():
     '''
     '''
-    le = LongExposurePetalometer.load(
+    le = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_24um_60deg_pet_1200_m1000_3000_370_1500_20.fits'))
@@ -302,7 +302,7 @@ def main230625_100_petals_realization_on_MORFEO_residuals_P50_long_exp(
     for i in range(100):
         print(i)
         petals = np.random.randint(100, 1000, 6)
-        le = LongExposurePetalometer(
+        le = LongExposureSimulation(
             tracking_number=tracking_number, rot_angle=60,
             start_from_step=100,
             petals=petals * u.nm,
@@ -321,12 +321,12 @@ def main230627_petalometer_on_MORFEO_residuals_with_petals_in_Ks():
     Measure and compensate for petals on MORFEO residuals that include injected
     pistons. Sensing wavelength is 2.2 um.
     '''
-    le_pet = LongExposurePetalometer.load(
+    le_pet = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_2.2um_60deg_pet_200_30_m100_370_500_0.fits'))
     true_petals = [200, 30, -100, 370, 500, 0] * u.nm
-    le = LongExposurePetalometer.load(
+    le = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_2.2um_60deg.fits'))
@@ -345,7 +345,7 @@ def main230627_petalometer_on_MORFEO_residuals_with_petals_in_Ks():
 def main230627_correction_on_MORFEO_residuals_with_petals_in_Ks():
     '''
     '''
-    le = LongExposurePetalometer.load(
+    le = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_2.2um_60deg_pet_200_30_m100_370_500_0.fits'))
@@ -377,12 +377,12 @@ def main230627_petalometer_on_MORFEO_residuals_with_small_petals_in_Ks():
     Measure and compensate for petals on MORFEO residuals that include injected
     pistons. Sensing wavelength is 2.2 um.
     '''
-    le_pet = LongExposurePetalometer.load(
+    le_pet = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_2.2um_60deg_pet_50_30_m15_70_100_0.fits'))
     true_petals = [50, 30, -15, 70, 100, 0] * u.nm
-    le = LongExposurePetalometer.load(
+    le = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_2.2um_60deg.fits'))
@@ -404,15 +404,15 @@ def main230627_petalometer_on_MORFEO_residuals_with_LWE_dual_wavelength():
     its correction.
     '''
     rot_angle = 60
-    le_24um = LongExposurePetalometer.load(
+    le_24um = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_LWE,
             'long_exp_%sum_%sdeg.fits' % (24, rot_angle)))
-    le_1_5um = LongExposurePetalometer.load(
+    le_1_5um = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_LWE,
             'long_exp_%sum_%sdeg.fits' % (1.5, rot_angle)))
-    le_1_6um = LongExposurePetalometer.load(
+    le_1_6um = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_LWE,
             'long_exp_%sum_%sdeg.fits' % (1.6, rot_angle)))
@@ -467,11 +467,11 @@ def main230627_petalometer_on_MORFEO_residuals_with_one_500nm_petals_in_Ks():
     Measure and compensate for petals on MORFEO residuals that include one
     injected pistons. Sensing wavelength is 2.2 um.
     '''
-    le500 = LongExposurePetalometer.load(
+    le500 = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_2.2um_60deg_pet_500_0_0_0_0_0.fits'))
-    le = LongExposurePetalometer.load(
+    le = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_2.2um_60deg.fits'))
@@ -486,11 +486,11 @@ def main230627_petalometer_on_MORFEO_residuals_with_one_800nm_petals_in_Ks():
     Measure and compensate for petals on MORFEO residuals that include one
     injected pistons. Sensing wavelength is 2.2 um.
     '''
-    le800 = LongExposurePetalometer.load(
+    le800 = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_2.2um_60deg_pet_800_0_0_0_0_0.fits'))
-    le = LongExposurePetalometer.load(
+    le = LongExposureSimulation.load(
         os.path.join(
             ROOT_DIR, TN_P50 + '0.0_0.0',
             'long_exp_2.2um_60deg.fits'))
