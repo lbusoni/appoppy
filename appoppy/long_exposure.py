@@ -19,7 +19,7 @@ class LepSnapshotEntry(object):
     LPE_TRACKNUM = 'LPE_TRACKNUM'
     PIXELSZ = 'PIXELSZ'
     STARTSTEP = 'STARTSTEP'
-    PETALS = 'PETALS'
+    M4_PETALS = 'PETALS'
     WAVELENGTH = 'WAVELENGTH'
     
 
@@ -53,7 +53,7 @@ class LongExposurePetalometer(Snapshotable):
         self._start_from_step = start_from_step
         self._niter = n_iter
         self._rot_angle = rot_angle
-        self._petals = petals
+        self._m4_petals = petals
         self._wavelength = wavelength
         self._lwe_speed = lwe_speed
         self._jpg_root = animation_folder(lpe_tracking_number)
@@ -75,7 +75,7 @@ class LongExposurePetalometer(Snapshotable):
         self._pet = Petalometer(
             tracking_number=self._passata_tracking_number,
             lwe_speed=self._lwe_speed,
-            petals=self._petals,
+            petals=self._m4_petals,
             residual_wavefront_start_from=self._start_from_step,
             rotation_angle=self._rot_angle,
             wavelength=self._wavelength,
@@ -313,7 +313,7 @@ class LongExposurePetalometer(Snapshotable):
         snapshot[LepSnapshotEntry.LPE_TRACKNUM] = self._lpe_tracking_number
         snapshot[LepSnapshotEntry.PIXELSZ] = self._pixelsize
         snapshot[LepSnapshotEntry.STARTSTEP] = self._start_from_step
-        snapshot[LepSnapshotEntry.PETALS] = self._petals
+        snapshot[LepSnapshotEntry.M4_PETALS] = self._m4_petals
         snapshot[LepSnapshotEntry.WAVELENGTH] = self._wavelength.to_value(u.m)
         snapshot.update(self._pet.get_snapshot(SnapshotPrefix.PETALOMETER))
         return Snapshotable.prepend(prefix, snapshot)
@@ -348,7 +348,7 @@ class LongExposurePetalometer(Snapshotable):
             hdr['LPE.' + LepSnapshotEntry.LPE_TRACKNUM],
             passata_tracking_number=hdr['LPE.' + LepSnapshotEntry.TRACKNUM],
             rot_angle=hdr['LPE.' + LepSnapshotEntry.ROT_ANGLE],
-            petals=hdr['LPE.' + LepSnapshotEntry.PETALS],
+            petals=hdr['LPE.' + LepSnapshotEntry.M4_PETALS],
             wavelength=wavelength,
             start_from_step=hdr['LPE.' + LepSnapshotEntry.STARTSTEP],
             n_iter=hdr['LPE.' + LepSnapshotEntry.NITER])

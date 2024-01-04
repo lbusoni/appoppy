@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from arte.utils.marechal import wavefront_rms_2_strehl_ratio
 from arte.utils.quadratic_sum import quadraticSum
 
-from appoppy.package_data import data_root_dir
 
 # ROOT_DIR = '/Users/lbusoni/Library/CloudStorage/GoogleDrive-lorenzo.busoni@inaf.it/Il mio Drive/adopt/Varie/CiaoCiaoWFS/analysis/data/from_appoppy/'
 
