@@ -5,6 +5,9 @@ from appoppy.petalometer import Petalometer
 from appoppy.elt_for_petalometry import EltForPetalometry
 from appoppy.phase_shift_interferometer import PhaseShiftInterferometer
 from skimage.restoration.unwrap import unwrap_phase
+from arte.utils.modal_decomposer import ModalDecomposer
+from arte.types.wavefront import Wavefront
+from arte.types.mask import CircularMask, BaseMask
 
 
 def tip_vs_ciaociao_rotation_angle():
@@ -65,26 +68,35 @@ def dumb_test_of_tip_measurement_from_interferogram_2():
     and convert it into nm rms. 
     '''
     model1 = EltForPetalometry(r0=np.inf, zern_coeff=[0, 0] * u.um)
-    model2 = EltForPetalometry(r0=np.inf, zern_coeff=[0, 2.2] * u.um)
+    model2 = EltForPetalometry(r0=np.inf, zern_coeff=[0, 2.2, 0, 2.2] * u.um)
     psi = PhaseShiftInterferometer(model1, model2)
+    psi._should_unwrap = True
     psi.acquire()
-    _ = psi.interferogram()
+    # _ = psi.interferogram()
+    opd = psi.interferogram()
     wrapped_phase = psi._wrapped
     plt.figure()
     plt.imshow(wrapped_phase, origin='lower')
     plt.colorbar()
     plt.title('Wrapped phase')
-    unwrapped_phase = np.ma.masked_array(unwrap_phase(wrapped_phase),
-                                   mask=psi.global_mask())
+    # unwrapped_phase = np.ma.masked_array(unwrap_phase(wrapped_phase),
+    # mask=psi.global_mask())
     plt.figure()
-    plt.imshow(unwrapped_phase, origin='lower')
+    plt.imshow(opd, origin='lower')
     plt.colorbar()
     plt.title('Unwrapped phase')
     plt.figure()
-    plt.plot(unwrapped_phase[int(unwrapped_phase.shape[0] / 2),:])
+    plt.plot(opd[int(opd.shape[0] / 2),:])
     plt.title('Cut on x axis of unwrapped phase')
-    opd = (np.ptp(unwrapped_phase) * psi._wf_0.wavelength / (2 * np.pi)
-           ).to_value(u.nm)
+    # opd = (np.ptp(unwrapped_phase) * psi._wf_0.wavelength / (2 * np.pi)
+    #        ).to_value(u.nm)
     rms_to_ptv = 4
-    a2 = opd / rms_to_ptv
-    return a2 
+    a2 = np.ptp(opd) / rms_to_ptv
+   
+    circular_mask = CircularMask((256, 256), 128, (128, 128))
+    md = ModalDecomposer(3)
+    zc = md.measureZernikeCoefficientsFromWavefront(
+        Wavefront.fromNumpyArray(opd),
+        circular_mask,
+        BaseMask.from_masked_array(opd.mask))
+    return a2, zc 
