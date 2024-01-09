@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from arte.utils.marechal import wavefront_rms_2_strehl_ratio
 from arte.utils.quadratic_sum import quadraticSum
 
-
 # ROOT_DIR = '/Users/lbusoni/Library/CloudStorage/GoogleDrive-lorenzo.busoni@inaf.it/Il mio Drive/adopt/Varie/CiaoCiaoWFS/analysis/data/from_appoppy/'
 
 TN_NONE = 'none'
@@ -22,14 +21,11 @@ TN_REF_100 = '20231213_123200.0_coo0.0_0.0'
 TN_REF_10 = '20231213_123403.0_coo0.0_0.0'
 
 
-
-
-
 def _create_long_exposure_generic(tn,
                                   code,
                                   rot_angle=60,
                                   petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
-                                  wavelength=1650*u.nm,
+                                  wavelength=1650 * u.nm,
                                   n_iter=1000):
     le = LongExposureSimulation(
         long_exposure_tracknum(tn, code),
@@ -83,6 +79,10 @@ def create_long_exposure_mcao_1_0002():
     return _create_long_exposure_generic(TN_MCAO_1, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
+def create_long_exposure_mcao_1_0003():
+    return _create_long_exposure_generic(TN_MCAO_1, '0003', petals=np.array([0, 0, 0, 0, 200, 0]) * u.nm)
+
+
 def create_long_exposure_dao_1_0000():
     return _create_long_exposure_generic(TN_DAO_1, '0000')
 
@@ -99,12 +99,20 @@ def create_long_exposure_scao_1000_0002():
     return _create_long_exposure_generic(TN_SCAO_1000, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
+def create_long_exposure_scao_1000_0003():
+    return _create_long_exposure_generic(TN_SCAO_1000, '0003', petals=np.array([0, 0, 0, 0, 200, 0]) * u.nm)
+
+
 def create_long_exposure_scao_2000_0000():
     return _create_long_exposure_generic(TN_SCAO_2000, '0000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm)
 
 
 def create_long_exposure_scao_2000_0002():
     return _create_long_exposure_generic(TN_SCAO_2000, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
+
+
+def create_long_exposure_scao_2000_0003():
+    return _create_long_exposure_generic(TN_SCAO_2000, '0003', petals=np.array([0, 0, 0, 0, 200, 0]) * u.nm)
 
 
 def create_long_exposure_ref_500_0000():
@@ -325,10 +333,10 @@ def plot_cedric(le_no_pet, le_pet, title=''):
     ax1.set_title(title)
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
 
-    print('stdev non-corrected opd: added petal %.1f nm / no added petal %.1f nm / diff %.1f' %
+    print('stdev non-corrected opd: added petal %.1f nm / no added petal %.1f nm / diff %.1f' % 
           (std_input_pet.mean(), std_input_no_pet.mean(), quadr_diff_input_nopet_pet.mean()))
 
-    print('stdev corrected opd: added petal %.1f nm / no added petal %.1f nm / diff %.1f' %
+    print('stdev corrected opd: added petal %.1f nm / no added petal %.1f nm / diff %.1f' % 
           (std_corr_inst.mean(), std_corr_inst_no_pet.mean(), quadr_diff_nopet_pet.mean()))
 
 
@@ -369,7 +377,6 @@ def plot_scao_1000():
 
 def plot_scao_2000():
     return _analyze_two_leps(TN_SCAO_2000, '0000', '0002')
-
 
 
 def update_header(tn, code):
