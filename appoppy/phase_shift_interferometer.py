@@ -1,6 +1,6 @@
 import numpy as np
 import poppy
-import skimage
+from skimage.restoration import unwrap_phase
 from astropy import units as u
 import matplotlib
 import matplotlib.pyplot as plt
@@ -27,17 +27,20 @@ class PhaseShiftInterferometer(Snapshotable):
     Parameters
     ----------
         optical_system_1: poppy.OpticalSystem
-           optical system for reference beam. It must implement set_phase_shift
+           optical system for reference beam. It must implement set_phase_shift.
 
         optical_system_2: poppy.OpticalSystem
 
+        should_unwrap: bool
+            Whether to unwrap the phase or not. Default is False.
 
     '''
 
-    def __init__(self, optical_system_1, optical_system_2):
+    def __init__(self, optical_system_1, optical_system_2,
+                 should_unwrap=False):
         self._os1 = optical_system_1
         self._os2 = optical_system_2
-        self._should_unwrap = False
+        self._should_unwrap = should_unwrap
         self._log = logging.getLogger('appoppy')
         self._create_system()
         self._ios_wf = None
@@ -104,8 +107,8 @@ class PhaseShiftInterferometer(Snapshotable):
         bsin = self._wf_3.intensity - self._wf_1.intensity
         bcos = self._wf_0.intensity - self._wf_2.intensity
         self._ps = np.arctan2(bsin, bcos)
-        self._b_map = np.sqrt((bsin**2 + bcos**2) / 4)
-        self._a_map = 0.25 * (self._wf_0.intensity + self._wf_1.intensity +
+        self._b_map = np.sqrt((bsin ** 2 + bcos ** 2) / 4)
+        self._a_map = 0.25 * (self._wf_0.intensity + self._wf_1.intensity + 
                               self._wf_2.intensity + self._wf_3.intensity)
         self._visibility = self._b_map / self._a_map
         self._os1.set_phase_shift(0)
@@ -145,12 +148,13 @@ class PhaseShiftInterferometer(Snapshotable):
         -------
         opd: numpy array
             optical path difference between the 2 beams in nm units,
-            bounded in the range (-wavelength/2, wavelength/2)
+            bounded in the range (-wavelength/2, wavelength/2) if
+            self._should_unwrap is set to False.
         '''
 
         self._wrapped = np.arctan2(np.sin(self._ps), np.cos(self._ps))
         if self._should_unwrap:
-            self._unwrapped = skimage.restoration.unwrap_phase(self._wrapped)
+            self._unwrapped = unwrap_phase(self._wrapped)
         else:
             self._unwrapped = self._wrapped.copy()
         self._ifgram = np.ma.masked_array(
