@@ -23,6 +23,7 @@ class Petalometer(Snapshotable):
     
     
     '''
+
     def __init__(self,
                  r0=np.inf,
                  tracking_number=None,
@@ -31,10 +32,11 @@ class Petalometer(Snapshotable):
                  npix=256,
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
                  rotation_angle=15,
-                 zernike=np.array([0])*u.nm,
+                 zernike=np.array([0]) * u.nm,
                  wavelength=2.2e-6 * u.m,
                  kolm_seed=None,
-                 should_display=True):
+                 should_display=True,
+                 should_unwrap=False):
         if kolm_seed is None:
             seed = np.random.randint(2147483647)
 
@@ -77,7 +79,8 @@ class Petalometer(Snapshotable):
         self.set_m4_petals(self._petals)
         self.set_zernike_wavefront(zernike)
 
-        self._i4 = PhaseShiftInterferometer(self._model1, self._model2)
+        self._i4 = PhaseShiftInterferometer(self._model1, self._model2,
+                                            should_unwrap)
 
     def get_snapshot(self, prefix=SnapshotPrefix.PETALOMETER):
         snapshot = {}
@@ -224,8 +227,6 @@ class Petalometer(Snapshotable):
     @property
     def estimated_petals(self):
         return self._pc.estimated_petals
-
-
 
 
 class PetalComputer():
