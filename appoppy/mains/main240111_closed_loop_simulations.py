@@ -1,5 +1,5 @@
 import logging
-import os
+import importlib
 import numpy as np
 from astropy import units as u
 from appoppy.simulation_results import SimulationResults
@@ -40,7 +40,10 @@ def _create_closed_loop_generic(tn,
 
 
 def _setUpBasicLogging():
-    logging.basicConfig(level=logging.WARNING)
+    import importlib
+    import logging
+    importlib.reload(logging)
+    logging.basicConfig(level=logging.INFO)
     logging.getLogger('poppy').setLevel(logging.ERROR)
 
 
@@ -54,8 +57,16 @@ def create_none_1002():
                                        petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
+def create_mcao_1_1000():
+    return _create_closed_loop_generic(TN_MCAO_1, '1000', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
+
+
 def create_mcao_1_1002():
     return _create_closed_loop_generic(TN_MCAO_1, '1002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
+
+
+def analyze_mcao_1_1002():
+    return _analyze_long_exposure(TN_MCAO_1, '1002')
 
 
 def _analyze_long_exposure(tracknum, code):
