@@ -21,7 +21,13 @@ class LepSnapshotEntry(object):
     STARTSTEP = 'STARTSTEP'
     M4_PETALS = 'PETALS'
     WAVELENGTH = 'WAVELENGTH'
+    INTEGRAL_GAIN = 'INT_GAIN'
+    SIMUL_MODE = 'SIMUL_MODE'
 
+
+class SimulationModes:
+    OPEN_LOOP_WFS = 'OLWFS'
+    CLOSED_LOOP_WFS = 'CLWFS'
 
 def long_exposure_tracknum(tn, code):
     return "%s_%s" % (tn, code)
@@ -74,7 +80,7 @@ class SimulationBase(Snapshotable):
     def run(self):
         pass
 
-    def get_snapshot(self, prefix='LEP'):
+    def get_snapshot_dict(self):
         snapshot = {}
         snapshot[LepSnapshotEntry.NITER] = self._niter
         snapshot[LepSnapshotEntry.ROT_ANGLE] = self._rot_angle
@@ -85,7 +91,11 @@ class SimulationBase(Snapshotable):
         snapshot[LepSnapshotEntry.M4_PETALS] = self._m4_initial_petals
         snapshot[LepSnapshotEntry.WAVELENGTH] = self._wavelength.to_value(u.m)
         snapshot.update(self._pet.get_snapshot(SnapshotPrefix.PETALOMETER))
-        return Snapshotable.prepend(prefix, snapshot)
+        return snapshot
+
+    def get_snapshot(self, prefix='LEP'):
+        header_dict = self.get_snapshot_dict()
+        return Snapshotable.prepend(prefix, header_dict)
 
     def save(self):
         filename = long_exposure_filename(self._lpe_tracking_number)
@@ -182,6 +192,13 @@ class ClosedLoopSimulation(SimulationBase):
 
     def set_gain(self, gain):
         self._integral_gain = gain
+
+    def get_snapshot_dict(self):
+        snapshot = super(ClosedLoopSimulation, self).get_snapshot_dict()
+        snapshot[LepSnapshotEntry.SIMUL_MODE] = SimulationModes.CLOSED_LOOP_WFS
+        snapshot[LepSnapshotEntry.INTEGRAL_GAIN] = self._integral_gain
+        return snapshot
+
 
     def run(self):
         self._pet = Petalometer(

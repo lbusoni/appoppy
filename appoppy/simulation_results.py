@@ -1,6 +1,6 @@
 from appoppy.ao_residuals import AOResidual
 from appoppy.gif_animator import Gif2DMapsAnimator
-from appoppy.long_exposure_simulation import LepSnapshotEntry, LongExposureSimulation, animation_folder, long_exposure_filename
+from appoppy.long_exposure_simulation import LepSnapshotEntry, LongExposureSimulation, SimulationModes, animation_folder, long_exposure_filename
 from appoppy.petalometer import PetalComputer
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -34,6 +34,8 @@ class SimulationResults():
         self.pixelsize = self._hdr_value(LepSnapshotEntry.PIXELSZ)
         self.m4_petals = self._hdr_value(LepSnapshotEntry.M4_PETALS)
         self.start_from_step = self._hdr_value(LepSnapshotEntry.STARTSTEP)
+        self.simulation_mode = self._get_simul_mode()
+        self.integral_gain = self._get_integral_gain()
 
         self._reconstructed_phase = reconstructed_phase
         self._meas_petals = meas_petals
@@ -58,6 +60,20 @@ class SimulationResults():
             wavelength = 24e-6 * u.m
         # TODO: fix wavelength
         return wavelength
+
+    def _get_simul_mode(self):
+        try:
+            res = self._hdr_value(LepSnapshotEntry.SIMUL_MODE)
+        except KeyError:
+            res = SimulationModes.OPEN_LOOP_WFS
+        return res
+
+    def _get_integral_gain(self):
+        try:
+            res = self._hdr_value(LepSnapshotEntry.INTEGRAL_GAIN)
+        except KeyError:
+            res = None
+        return res
 
     @staticmethod
     def load(lep_tracknum):

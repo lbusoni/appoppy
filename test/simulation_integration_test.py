@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 from astropy import units as u
 from appoppy.simulation_results import SimulationResults
-from appoppy.long_exposure_simulation import ClosedLoopSimulation, LongExposureSimulation, animation_folder
+from appoppy.long_exposure_simulation import ClosedLoopSimulation, LongExposureSimulation, SimulationModes, animation_folder
 from appoppy.maory_residual_wfe import PASSATASimulationConverter
 from appoppy.package_data import ROOT_DIR_KEY
 import shutil
@@ -152,6 +152,8 @@ class ClosedLoopSimulationIntegrationTest(unittest.TestCase):
         lep.save()
 
         sr = SimulationResults.load(self._tn)
+        self.assertEqual(sr.simulation_mode, SimulationModes.CLOSED_LOOP_WFS)
+        self.assertEqual(sr.integral_gain, 0.9)
         np.testing.assert_allclose(
             lep._reconstructed_phase,
             sr.reconstructed_phase())
