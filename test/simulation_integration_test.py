@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 from astropy import units as u
 from appoppy.simulation_results import SimulationResults
-from appoppy.long_exposure_simulation import LongExposureSimulation, animation_folder
+from appoppy.long_exposure_simulation import ClosedLoopSimulation, LongExposureSimulation, animation_folder
 from appoppy.maory_residual_wfe import PASSATASimulationConverter
 from appoppy.package_data import ROOT_DIR_KEY
 import shutil
@@ -89,6 +89,90 @@ class SimulationIntegrationTest(unittest.TestCase):
     def _temp_fname(self):
         return os.path.join(tempfile.gettempdir(), 'lep.fits')
 
+
+class ClosedLoopSimulationIntegrationTest(unittest.TestCase):
+
+    def setUp(self):
+        np.set_printoptions(precision=3, suppress=True)
+        self._setUpBasicLogging()
+        self._modify_root_dir()
+
+    def tearDown(self):
+        try:
+            self._delete_created_dir()
+        except Exception as e:
+            self._logger.error(
+                'Could not delete folders created by the integration test. (%s)' % e)
+        self._reset_root_dir()
+
+    def _setUpBasicLogging(self):
+        logging.basicConfig(level=logging.DEBUG)
+        logging.getLogger('appoppy').setLevel(logging.ERROR)
+        logging.getLogger('poppy').setLevel(logging.ERROR)
+        logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
+        logging.getLogger('matplotlib.pyplot').setLevel(logging.ERROR)
+        logging.getLogger('matplotlib.colorbar').setLevel(logging.ERROR)
+        logging.getLogger('EltForPetalometry-M1').setLevel(logging.ERROR)
+        logging.getLogger('EltForPetalometry-M2').setLevel(logging.ERROR)
+        self._logger = logging.getLogger('Integration Test')
+        self._logger.info("Integration Test started")
+
+    def _modify_root_dir(self):
+        os.environ[ROOT_DIR_KEY] = os.path.join(
+            'test', 'data')
+        self._root_dir = os.environ[ROOT_DIR_KEY]
+
+    def _reset_root_dir(self):
+        try:
+            del os.environ[ROOT_DIR_KEY]
+        except Exception:
+            pass
+
+    def _delete_created_dir(self):
+        shutil.rmtree(os.path.join(self._root_dir,
+                      'passata_simulations_converted'))
+        shutil.rmtree(animation_folder(self._tn))
+
+    def test_call_all(self):
+
+        self._tn = 'foo_0000'
+        aores_tn = 'none'
+
+        print(self._root_dir)
+        psc = PASSATASimulationConverter()
+        psc.create_none_tracknum(niter=5)
+        lep = ClosedLoopSimulation(self._tn,
+                                   aores_tn,
+                                   petals=np.array(
+                                       [0, 100, 0, 0, 0, 0]) * u.nm,
+                                   start_from_step=0,
+                                   n_iter=4,
+                                   gain=0.9)
+        lep.run()
+        lep.save()
+
+        sr = SimulationResults.load(self._tn)
+        np.testing.assert_allclose(
+            lep._reconstructed_phase,
+            sr.reconstructed_phase())
+
+        sr.animate_corrected_opd()
+        sr.animate_reconstructed_phase()
+
+        self._logger.info('Corr opd last step %g' %
+                          sr.corrected_opd()[-1].std())
+        self.assertAlmostEqual(0, sr.corrected_opd()[-1].std(), delta=1)
+        self._logger.info('Input opd last step %g' %
+                          sr.input_opd()[-1].std())
+        self.assertAlmostEqual(37.2, sr.input_opd()[-1].std(), delta=1)
+
+        petals = sr.petals()[0]
+        self._logger.info('Petals %s' % petals)
+        self.assertAlmostEqual(100, (petals[1]-petals[0]))
+        self.assertEqual(1, sr.time_step)
+
+    def _temp_fname(self):
+        return os.path.join(tempfile.gettempdir(), 'lep.fits')
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']

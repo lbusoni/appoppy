@@ -1,4 +1,5 @@
 
+import logging
 import numpy as np
 from abc import ABC, abstractmethod
 
@@ -34,23 +35,83 @@ class AbstractSensor(ABC):
 class IntegralController():
     '''
     Implement an integral controller
+    
+    Sequence: 
+    1) sense, compute command & add it to delay line
+    2) actuate
+    
     '''
 
-    def __init__(self, sensor, actuator):
+    def __init__(self, sensor, actuator, ki=0.5, delay=0, name='Integral Controller'):
+        self._logger = logging.getLogger(name)
         self._sensor = sensor
         self._actuator = actuator
-        self._last_command = self._actuator.get_command()
-        self.ki = 0.5
+        self._cnt = 0
+        self.delay = delay
+        self._init_command_history_to_zero()
+        self.ki = ki
         self.set_point = 0
         self.control_matrix = np.eye(actuator.dimension, sensor.dimension)
 
+    def _init_command_history(self):
+        curr_command = self._get_actuator_cmd()
+        self._cmd_hist = np.tile(curr_command, (self.delay+1, 1))
+        self._logger.debug(
+            "Initialized command history to %s" % self._cmd_hist)
+
+    def _init_command_history_to_zero(self):
+        curr_command = self._get_actuator_cmd()*0
+        self._cmd_hist = np.tile(curr_command, (self.delay+1, 1))
+        self._logger.debug(
+            "Initialized command history to %s" % self._cmd_hist)
+
+    def _get_actuator_cmd(self):
+        return np.atleast_1d(self._actuator.get_command()).astype(float)
+
+    def _get_sensor_measurement(self):
+        return np.atleast_1d(self._sensor.get_measurement()).astype(float)
+
+    def _update_command_history(self, new_value):
+        newv = self._cmd_hist.copy()
+        newv[0] = new_value
+        newv = np.roll(newv, 1, axis=0)
+        self._cmd_hist = newv
+
+    @property
+    def last_command(self):
+        '''
+        Last command applied
+        '''
+        return self._cmd_hist[0]
+
+    @property
+    def last_measurement(self):
+        '''
+        Last measurement done by the sensor
+        '''
+        return self._last_meas
+
     def step(self):
-        meas = self._sensor.get_measurement()
-        error = meas - self.set_point
-        delta_command = np.dot(self.control_matrix, error)
-        command = self._last_command - self.ki * delta_command
-        self._actuator.set_command(command)
-        self._last_command = self._actuator.get_command()
+        self.sense()
+        self.actuate()
+
+    def sense(self):
+        # TODO: force sequence sense-actuate-sense-actuate etc
+        self._last_meas = self._get_sensor_measurement()
+        self._error = self._last_meas - self.set_point
+        self._delta_command = -self.ki * \
+            np.dot(self.control_matrix, self._error)
+        self._total_command = self.last_command + self._delta_command
+        self._logger.debug("step %d - meas %s - delta_cmd %s - total_cmd %s" % (
+            self._cnt, self.last_measurement, self._delta_command,
+            self._total_command))
+
+    def actuate(self):
+        self._update_command_history(self._total_command)
+        self._actuator.set_command(self.last_command)
+        self._logger.debug("step %d - Cmd %s applied" %
+                           (self._cnt, self.last_command))
+        self._cnt += 1
 
 
 class PIDController:
