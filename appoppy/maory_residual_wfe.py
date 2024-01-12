@@ -9,6 +9,7 @@ import astropy.units as u
 from appoppy import elt_aperture
 from scipy.ndimage import rotate
 from appoppy.snapshotable import Snapshotable
+from appoppy.mask import sector_mask
 
 
 def transfer_from_faramir_to_drive(tracking_number,
@@ -17,9 +18,9 @@ def transfer_from_faramir_to_drive(tracking_number,
     main_dir2 = '/Volumes/GoogleDrive/Drive\ condivisi/MORFEO-OAA/Petalometro\ Ciao\ Ciao/Simulazioni\ PASSATA/'
     os.mkdir(os.path.join(main_dir1, tracking_number))
     remote_path = "/raid1/guido/results/MAORY/%s/mcaoFull/" % tag_profile
-    os.system("scp " + "gcarla@faramir:" + remote_path + tracking_number +
+    os.system("scp " + "gcarla@faramir:" + remote_path + tracking_number + 
               "/params.txt " + main_dir2 + tracking_number + "/")
-    os.system("scp -r " + "gcarla@faramir:" + remote_path +
+    os.system("scp -r " + "gcarla@faramir:" + remote_path + 
               tracking_number + "_oaCUBEs/* " + main_dir2 + tracking_number + "/")
 
 
@@ -99,6 +100,62 @@ class PASSATASimulationConverter():
         header[AoResSnapshotEntry.TIME_STEP] = timestep
         fits.writeto(fname_fits, res_wfs.data, header)
         fits.append(fname_fits, mask.astype(int))
+        
+    def convert_from_fits_data_with_petal_subtraction(
+            self, tracking_number, rho, theta, pupilmasktag, timestep):
+        fname_orig_fits = os.path.join(data_root_dir(),
+                                       'passata_simulations',
+                                       tracking_number,
+                                       'CUBE_CL_coo%s_%s.fits' % (rho, theta))
+        fname_newdir = os.path.join(
+            self.dirname(),
+            tracking_number + ('_coo%s_%s' + '_ps') % (rho, theta))
+        os.makedirs(fname_newdir, exist_ok=True)
+        fname_fits = os.path.join(fname_newdir, 'CUBE_CL_converted.fits')
+        dat, hdr = fits.getdata(fname_orig_fits, 0, header=True)
+        maskhdu = restore_elt_pupil_mask(pupilmasktag)
+        maskhdr = maskhdu.header
+        mask = maskhdu.data
+        rotation = float(maskhdr['ROTATION'])
+    
+        phase_screen = rotate(
+            dat, rotation, reshape=False, cval=0,
+            mode='constant', axes=(1, 0))
+        phase_screen = np.moveaxis(phase_screen, -1, 0)
+    
+        cmask = np.tile(mask, (phase_screen.shape[0], 1, 1))
+        res_wfs = np.ma.masked_array(phase_screen, mask=cmask)
+        res_wfs_ps = self._subtract_petals(res_wfs)
+    
+        header = fits.Header()
+        header[AoResSnapshotEntry.TRACKING_NUMBER] = hdr['TN']
+        header[AoResSnapshotEntry.COORDINATE_RHO] = float(hdr['POCOO0'])
+        header[AoResSnapshotEntry.COORDINATE_THETA] = float(hdr['POCOO1'])
+        header[AoResSnapshotEntry.PIXEL_SCALE] = maskhdr['PIXELSCL']
+        header[AoResSnapshotEntry.PUPIL_TAG] = pupilmasktag
+        header[AoResSnapshotEntry.TIME_STEP] = timestep
+        fits.writeto(fname_fits, res_wfs_ps.data, header)
+        fits.append(fname_fits, mask.astype(int))
+    
+    def _subtract_petals(self, ph_screen):
+        angs = (90, 30, -30, -90, -150, -210, -270)
+        petals_median = np.zeros((ph_screen.shape[0], 6))
+        wfs_ps_data = np.zeros(ph_screen.shape)
+        for i in range(6):
+            mask = self._create_mask(ph_screen, (angs[i + 1], angs[i]))
+            psm = np.ma.masked_array(
+            ph_screen, mask=np.broadcast_to(mask, ph_screen.shape))
+            petals_median[:, i] = np.ma.median(psm, axis=(1, 2))
+            for j in range(wfs_ps_data.shape[0]):
+                wfs_ps_data[j][np.where(~mask)] = psm[j][
+                    np.where(~mask)] - petals_median[j, i]
+        return np.ma.masked_array(wfs_ps_data, mask=ph_screen.mask)
+    
+    def _create_mask(self, ph_screen, angle_range):
+        smask1 = sector_mask(ph_screen[0].shape,
+                             (angle_range[0], angle_range[1]))
+        mask = np.ma.mask_or(ph_screen[0].mask, ~smask1)
+        return mask
 
     def create_none_tracknum(self, niter=500):
         mask = np.zeros((niter, 64, 64), dtype=bool)
