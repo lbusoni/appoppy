@@ -3,7 +3,7 @@ import os
 import numpy as np
 from astropy import units as u
 from appoppy.simulation_results import SimulationResults
-from appoppy.long_exposure_simulation import LongExposureSimulation, long_exposure_filename, long_exposure_tracknum
+from appoppy.long_exposure_simulation import ClosedLoopSimulation, LongExposureSimulation, long_exposure_filename, long_exposure_tracknum
 import matplotlib.pyplot as plt
 from arte.utils.marechal import wavefront_rms_2_strehl_ratio
 from arte.utils.quadratic_sum import quadraticSum
@@ -39,6 +39,25 @@ def _create_long_exposure_generic(tn,
     return le
 
 
+def _create_closed_loop_generic(tn,
+                                code,
+                                rot_angle=60,
+                                petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
+                                wavelength=1650 * u.nm,
+                                n_iter=1000):
+    le = ClosedLoopSimulation(
+        long_exposure_tracknum(tn, code),
+        tn,
+        rot_angle=rot_angle,
+        petals=petals,
+        wavelength=wavelength,
+        n_iter=n_iter,
+        gain=0.5)
+    le.run()
+    le.save()
+    return le
+
+
 def create_all():
     create_long_exposure_mcao_1_0000()
     create_long_exposure_mcao_1_0002()
@@ -57,6 +76,10 @@ def create_all():
     create_long_exposure_ref_10_0000()
     create_long_exposure_ref_10_0002()
 
+
+def create_closed_loop_none_1002():
+    return _create_closed_loop_generic(TN_NONE, '1002', n_iter=100,
+                                       petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 def create_long_exposure_none_0000():
     return _create_long_exposure_generic(TN_NONE, '0000', n_iter=100)
