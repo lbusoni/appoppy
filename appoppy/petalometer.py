@@ -240,6 +240,7 @@ class PetalComputer():
     def estimated_petals(self):
         res = -1 * np.cumsum(self.across_islands_jumps)
         # return zero_mean(res, self.wavelength)
+        res -= res.mean()
         return res
 
     @property

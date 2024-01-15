@@ -35,6 +35,15 @@ class PetalometerTest(unittest.TestCase):
         pet.advance_step_idx()
         self.assertEqual(pet.step_idx, 11)
 
+    def test_estimated_petals_have_zero_mean(self):
+        m4_petals = np.array([0, 100, 200, 0, 300, 0])*u.nm
+        pet = Petalometer(tracking_number='none',
+                          petals=m4_petals)
+        wanted = m4_petals - m4_petals.mean()
+        pet.sense_wavefront_jumps()
+        actual = pet.estimated_petals
+        np.testing.assert_allclose(actual, wanted, atol=1e-10)
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
