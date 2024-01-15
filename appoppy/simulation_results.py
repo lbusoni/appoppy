@@ -25,7 +25,7 @@ class SimulationResults():
         self._niter = self._hdr_value(LepSnapshotEntry.NITER)
         self._rot_angle = self._hdr_value(LepSnapshotEntry.ROT_ANGLE)
         self._lpe_tracking_number = self._hdr_value(
-            LepSnapshotEntry.LPE_TRACKNUM)
+            LepSnapshotEntry.SIMUL_TRACKNUM)
         self._jpg_root = animation_folder(self._lpe_tracking_number)
         self.passata_tracking_number = self._hdr_value(
             LepSnapshotEntry.TRACKNUM)

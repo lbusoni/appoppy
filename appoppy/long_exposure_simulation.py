@@ -16,7 +16,7 @@ class LepSnapshotEntry(object):
     NITER = 'NITER'
     ROT_ANGLE = 'ROTANG'
     TRACKNUM = 'TRACKNUM'
-    LPE_TRACKNUM = 'LPE_TRACKNUM'
+    SIMUL_TRACKNUM = 'LPE_TRACKNUM'
     PIXELSZ = 'PIXELSZ'
     STARTSTEP = 'STARTSTEP'
     M4_PETALS = 'PETALS'
@@ -50,7 +50,7 @@ class SimulationBase(Snapshotable):
     SNAPSHOT_PREFIX = 'LPE'
 
     def __init__(self,
-                 lpe_tracking_number,
+                 simulation_tracking_number,
                  passata_tracking_number,
                  rot_angle=10,
                  petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm,
@@ -64,10 +64,10 @@ class SimulationBase(Snapshotable):
         self._m4_initial_petals = petals
         self._wavelength = wavelength
         self._lwe_speed = lwe_speed
-        self._jpg_root = animation_folder(lpe_tracking_number)
+        self._jpg_root = animation_folder(simulation_tracking_number)
         self._reconstructed_phase = None
         self._pixelsize = None
-        self._lpe_tracking_number = lpe_tracking_number
+        self._simul_tracking_number = simulation_tracking_number
         self._passata_tracking_number = passata_tracking_number
         if self._passata_tracking_number:
             aores = AOResidual(self._passata_tracking_number)
@@ -85,7 +85,7 @@ class SimulationBase(Snapshotable):
         snapshot[LepSnapshotEntry.NITER] = self._niter
         snapshot[LepSnapshotEntry.ROT_ANGLE] = self._rot_angle
         snapshot[LepSnapshotEntry.TRACKNUM] = self._passata_tracking_number
-        snapshot[LepSnapshotEntry.LPE_TRACKNUM] = self._lpe_tracking_number
+        snapshot[LepSnapshotEntry.SIMUL_TRACKNUM] = self._simul_tracking_number
         snapshot[LepSnapshotEntry.PIXELSZ] = self._pixelsize
         snapshot[LepSnapshotEntry.STARTSTEP] = self._start_from_step
         snapshot[LepSnapshotEntry.M4_PETALS] = self._m4_initial_petals
@@ -98,7 +98,7 @@ class SimulationBase(Snapshotable):
         return Snapshotable.prepend(prefix, header_dict)
 
     def save(self):
-        filename = long_exposure_filename(self._lpe_tracking_number)
+        filename = long_exposure_filename(self._simul_tracking_number)
         rootpath = Path(filename).parent.absolute()
         rootpath.mkdir(parents=True, exist_ok=True)
         hdr = Snapshotable.as_fits_header(
