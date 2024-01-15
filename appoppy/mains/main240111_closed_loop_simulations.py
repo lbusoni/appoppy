@@ -111,6 +111,7 @@ def create_all():
     create_none_1002()
     create_all_petals_sequences_for(TN_MCAO_1_PS)
     create_all_petals_sequences_for(TN_SCAO_2000_PS)
+    create_all_petals_sequences_for(TN_REF_10_PS)
 
 
 def create_none_1002():
@@ -118,19 +119,19 @@ def create_none_1002():
                                        petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
-def create_mcao_1_1000():
-    _create_closed_loop_generic(
-        TN_MCAO_1, '1000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm)
+# def create_mcao_1_1000():
+#     _create_closed_loop_generic(
+#         TN_MCAO_1, '1000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm)
 
 
-def create_mcao_1_1002():
-    _create_closed_loop_generic(
-        TN_MCAO_1, '1002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
+# def create_mcao_1_1002():
+#     _create_closed_loop_generic(
+#         TN_MCAO_1, '1002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
-def create_mcao_1_1003():
-    _create_closed_loop_generic(
-        TN_MCAO_1, '1003', petals=np.array([0, 0, 0, 0, 200, 0]) * u.nm)
+# def create_mcao_1_1003():
+#     _create_closed_loop_generic(
+#         TN_MCAO_1, '1003', petals=np.array([0, 0, 0, 0, 200, 0]) * u.nm)
 
 
 # def create_mcao_1_1004():
@@ -225,27 +226,27 @@ def create_mcao_1_1003():
 
 
 def analyze_mcao_1_1002():
-    return _analyze_long_exposure(TN_MCAO_1, '1002')
+    return _analyze_simul_results(TN_MCAO_1, '1002')
 
 
 def analyze_mcao_1_1003():
-    return _analyze_long_exposure(TN_MCAO_1, '1003')
+    return _analyze_simul_results(TN_MCAO_1, '1003')
 
 
 def analyze_mcao_1_1004():
-    return _analyze_long_exposure(TN_MCAO_1, '1004', '0000')
+    return _analyze_simul_results(TN_MCAO_1_PS, '1004', '1000')
 
 
 def analyze_mcao_1_1005():
-    return _analyze_long_exposure(TN_MCAO_1, '1005', '0000')
+    return _analyze_simul_results(TN_MCAO_1, '1005', '0000')
 
 
 def analyze_mcao_1_1006():
-    return _analyze_long_exposure(TN_MCAO_1, '1006', '0000')
+    return _analyze_simul_results(TN_MCAO_1, '1006', '0000')
 
 
 def analyze_mcao_1_1007():
-    return _analyze_long_exposure(TN_MCAO_1, '1007', '0000')
+    return _analyze_simul_results(TN_MCAO_1, '1007', '0000')
 
 #
 # def _analyze_long_exposure(tracknum, code):
@@ -274,7 +275,7 @@ def analyze_mcao_1_1007():
 #     return le
 
 
-def _analyze_long_exposure(tracknum, code_scramble, code_noscramble):
+def _analyze_simul_results(tracknum, code_scramble, code_noscramble):
     '''
     Measure and compensate for petals on MORFEO residuals
     '''
@@ -284,14 +285,12 @@ def _analyze_long_exposure(tracknum, code_scramble, code_noscramble):
         long_exposure_tracknum(tracknum, code_noscramble))
     std_input = le_noscramble.input_opd()[20:].std(axis=(1, 2))
     std_corr_inst = le_scramble.corrected_opd()[20:].std(axis=(1, 2))
-    std_corr_long = le_scramble.corrected_opd_from_reconstructed_phase_ave()[
-        20:].std(axis=(1, 2))
+#    std_corr_long = le_scramble.corrected_opd_from_reconstructed_phase_ave()[20:].std(axis=(1, 2))
     _plot_stdev_residual(le_scramble, le_noscramble,
                            title="%s %s" % (tracknum, code_scramble))
     print('\nMean of MORFEO residuals stds: %s' % std_input.mean())
-    print(
-        'Mean of MORFEO residuals (with long exposure petal correction) stds: %s'
-        % std_corr_long.mean())
+#    print('Mean of MORFEO residuals (with long exposure petal correction) stds: %s'
+#        % std_corr_long.mean())
     print(
         'Mean of MORFEO residuals (with short exposure petal correction) stds: %s'
         % std_corr_inst.mean())

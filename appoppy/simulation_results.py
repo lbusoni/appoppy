@@ -1,3 +1,4 @@
+from functools import cache
 from appoppy.ao_residuals import AOResidual
 from appoppy.gif_animator import Gif2DMapsAnimator
 from appoppy.long_exposure_simulation import LepSnapshotEntry, LongExposureSimulation, SimulationModes, animation_folder, long_exposure_filename
@@ -42,9 +43,6 @@ class SimulationResults():
         self._input_opd = input_opd
         self._corrected_opd = corrected_opd
 
-        self._phase_diff_cumave = None
-        self._meas_petals_no_global_pist = None
-        self._meas_petals_cumave = None
 
     def _hdr_value(self, key):
         return self._hdr[LongExposureSimulation.SNAPSHOT_PREFIX+'.'+key]
@@ -99,6 +97,7 @@ class SimulationResults():
     def time_step(self):
         return self._time_step
 
+    @cache
     def input_opd(self):
         '''
         Pupil OPD before petal correction
@@ -110,8 +109,8 @@ class SimulationResults():
         optical element in the system (atmospheric turbulence/AO residual,
         low-wind-effect, M4 petals, Zernike aberration)  
 
-        It is not guaranteed that each screen has null global piston, i.e.
-        phase_screen.mean(axis=(1,2)) != 0
+        It is guaranteed that each screen has null global piston, i.e.
+        input_opd().mean(axis=(1,2)) == 0
 
         Returns
         -------
@@ -119,15 +118,17 @@ class SimulationResults():
             pupil opd [nm]
 
         '''
-        return self._input_opd
+        return np.ma.array([cc-cc.mean() for cc in self._input_opd])
 
+    @cache
     def input_opd_cumave(self):
-        self._phase_screen_cumave = self._cumaverage(self.input_opd())
-        return self._phase_screen_cumave
+        return self._cumaverage(self.input_opd())
 
+    @cache
     def input_opd_ave(self):
         return self.input_opd().mean(axis=0)
 
+    @cache
     def input_opd_std(self):
         '''
         Stdev of pupil OPD before petal correction
@@ -142,16 +143,26 @@ class SimulationResults():
         '''
         return self.input_opd().std(axis=(1, 2)).mean()
 
+    @cache
     def corrected_opd(self):
         '''
-        Residual pupil OPD after instantaneus petal correction
+        Residual pupil OPD after petal correction
 
-        It returns a cube of frames where the i-th frame corresponds to
+        If `simulation_mode` is open-loop wavefront sensing (OLWFS),
+        this method returns a cube of frames where the i-th frame corresponds to
         the Optical Path Difference map of the i-th temporal step after
         instantaneus petal correction
-
         The petal correction is based on the short-exposure reconstructed 
         phase, i.e. on the phase reconstructed from the i-th frame  
+
+        If `simulation_mode` is closed-loop wavefront sensing (CLWFS),
+        this method returns a cube of frames where the i-th frame corresponds to
+        the Optical Path Difference map of the i-th temporal step after
+        the petal correction computed by the integral controller, with 
+        gain equal to `integral_gain`  
+        
+        The returned OPD are global piston-free i.e.
+        corrected_opd().mean(axis=(1,2)) == 0
 
         Returns
         -------
@@ -159,15 +170,17 @@ class SimulationResults():
             pupil opd after petal correction [nm]
 
         '''
-        return self._corrected_opd
+        return np.ma.array([cc-cc.mean() for cc in self._corrected_opd])
 
+    @cache
     def corrected_opd_cumave(self):
-        self._corrected_opd_cumave = self._cumaverage(self.corrected_opd())
-        return self._corrected_opd_cumave
+        return self._cumaverage(self.corrected_opd())
 
+    @cache
     def corrected_opd_ave(self):
         return self.corrected_opd().mean(axis=0)
 
+    @cache
     def corrected_opd_std(self):
         '''
         Stdev of residual opd after petal correction
@@ -182,6 +195,7 @@ class SimulationResults():
         '''
         return self.corrected_opd().std(axis=(1, 2)).mean()
 
+    @cache
     def petals(self):
         '''
         Estimated petals
@@ -195,16 +209,12 @@ class SimulationResults():
             esitmated petals as a function of time [nm]
 
         '''
-        if self._meas_petals_no_global_pist is None:
-            self._meas_petals_no_global_pist = self._meas_petals - np.broadcast_to(
+        return self._meas_petals - np.broadcast_to(
                 self._meas_petals.mean(axis=1), (6, self._niter)).T
 
-        return self._meas_petals_no_global_pist
-
+    @cache
     def petals_cumave(self):
-        if self._meas_petals_cumave is None:
-            self._meas_petals_cumave = self._cumaverage(self.petals())
-        return self._meas_petals_cumave
+        return self._cumaverage(self.petals())
 
     def reconstructed_phase(self):
         '''
@@ -228,6 +238,7 @@ class SimulationResults():
 
         return self._reconstructed_phase
 
+    @cache
     def reconstructed_phase_cumave(self):
         '''
         Cumulative average of reconstructed phase maps
@@ -240,11 +251,9 @@ class SimulationResults():
         reconstructed_phase_cumave: numpy array (n_iter, n_pixel, n_pixel)
             cumulative temporal average of petalometer reconstructed phase.
         '''
-        if self._phase_diff_cumave is None:
-            self._phase_diff_cumave = self._cumaverage(
-                self.reconstructed_phase())
-        return self._phase_diff_cumave
+        return self._cumaverage(self.reconstructed_phase())
 
+    @cache
     def reconstructed_phase_ave(self):
         '''
         Temporal average of reconstructed phase maps
@@ -317,6 +326,7 @@ class SimulationResults():
                                                      self.rot_angle,
                                                      self.input_opd().shape[1])
 
+    @cache
     def corrected_opd_from_reconstructed_phase_ave(self):
         '''
         Residual OPD after petal correction using long exposure
