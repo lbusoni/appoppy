@@ -220,7 +220,7 @@ def analyze_mcao_1_1003():
 
 
 def analyze_mcao_1_1004():
-    return _analyze_simul_results(TN_MCAO_1_PS, '1004')
+    return _analyze_simul_results(TN_MCAO_1, '1004')
 
 
 def analyze_mcao_1_1005():
@@ -338,10 +338,14 @@ def _analyze_simul_results(tracknum, code_scramble):
     Measure and compensate for petals on MORFEO residuals
     '''
     code_noscramble = '0000'
+    if tracknum[-3:] != '_ps':
+        tracknum_noscramble = tracknum + '_ps'
+    else:
+        tracknum_noscramble = tracknum
     le_scramble = SimulationResults.load(
         long_exposure_tracknum(tracknum, code_scramble))
     le_noscramble = SimulationResults.load(
-        long_exposure_tracknum(tracknum, code_noscramble))
+        long_exposure_tracknum(tracknum_noscramble, code_noscramble))
     std_input = le_noscramble.input_opd()[20:].std(axis=(1, 2))
     std_corr_inst = le_scramble.corrected_opd()[20:].std(axis=(1, 2))
 #    std_corr_long = le_scramble.corrected_opd_from_reconstructed_phase_ave()[20:].std(axis=(1, 2))
@@ -412,7 +416,7 @@ def _plot_stdev_residual(le_scramble, le_noscramble, title=''):
     print('\nResidual short [nm]: %s' % (quadr_diff_inst.mean()))
     # print('\nResidual long [nm]: %s' % (quadr_diff_long.mean()))
     plt.plot(timev, quadr_diff_inst,
-             label=r'$\sqrt{\sigma_{off}^2-\sigma_{short}^2}$')
+             label=r'$\sqrt{\sigma_{short}^2 - \sigma_{off}^2}$')
     # plt.plot(timev, quadr_diff_long,
     #          label=r'$\sqrt{\sigma_{off}^2-\sigma_{long}^2}$')
     plt.legend()
