@@ -1,5 +1,4 @@
 from functools import cache
-from appoppy.ao_residuals import AOResidual
 from appoppy.gif_animator import Gif2DMapsAnimator
 from appoppy.long_exposure_simulation import LepSnapshotEntry, LongExposureSimulation, SimulationModes, animation_folder, long_exposure_filename
 from appoppy.petalometer import PetalComputer
@@ -9,6 +8,8 @@ import numpy as np
 from astropy.io import fits
 
 import os
+
+from appoppy.snapshotable import SnapshotPrefix
 
 
 class SimulationResults():
@@ -29,8 +30,9 @@ class SimulationResults():
         self._jpg_root = animation_folder(self._lpe_tracking_number)
         self.passata_tracking_number = self._hdr_value(
             LepSnapshotEntry.TRACKNUM)
-        aores = AOResidual(self.passata_tracking_number)
-        self._time_step = aores.time_step
+        self._time_step = self._hdr_value(
+            SnapshotPrefix.PETALOMETER+'.'+SnapshotPrefix.PATH1+'.' +
+            SnapshotPrefix.PASSATA_RESIDUAL+'.TIME_STEP')
         self.wavelength = self._get_wavelength()
         self.pixelsize = self._hdr_value(LepSnapshotEntry.PIXELSZ)
         self.m4_petals = self._hdr_value(LepSnapshotEntry.M4_PETALS)
