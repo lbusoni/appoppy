@@ -30,3 +30,9 @@ def convert_residual_for_morfeo_analysis():
         '20231213_123200.0', '0.0', '0.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
     psc.convert_from_fits_data_with_petal_subtraction(
         '20231213_123403.0', '0.0', '0.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
+
+    # without petal subtraction
+    psc.convert_from_fits_data(
+        '20240109_171236.0', '55.0', '0.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
+    psc.convert_from_fits_data(
+        '20240109_165105.0', '0.0', '0.0', PUPIL_MASK_480_PHASE_C_SPIDER23, 0.002)
