@@ -98,7 +98,7 @@ class PASSATASimulationConverter():
         header[AoResSnapshotEntry.PIXEL_SCALE] = maskhdr['PIXELSCL']
         header[AoResSnapshotEntry.PUPIL_TAG] = pupilmasktag
         header[AoResSnapshotEntry.TIME_STEP] = timestep
-        fits.writeto(fname_fits, res_wfs.data, header)
+        fits.writeto(fname_fits, res_wfs.data, header, overwrite=True)
         fits.append(fname_fits, mask.astype(int))
         
     def convert_from_fits_data_with_petal_subtraction(
@@ -134,23 +134,28 @@ class PASSATASimulationConverter():
         header[AoResSnapshotEntry.PIXEL_SCALE] = maskhdr['PIXELSCL']
         header[AoResSnapshotEntry.PUPIL_TAG] = pupilmasktag
         header[AoResSnapshotEntry.TIME_STEP] = timestep
-        fits.writeto(fname_fits, res_wfs_ps.data, header)
+        fits.writeto(fname_fits, res_wfs_ps.data, header, overwrite=True)
         fits.append(fname_fits, mask.astype(int))
+        fits.append(fname_fits, self.residual_petals)
     
     def _subtract_petals(self, ph_screen):
         angs = (90, 30, -30, -90, -150, -210, -270)
-        petals_median = np.zeros((ph_screen.shape[0], 6))
+        self._residual_petals = np.zeros((ph_screen.shape[0], 6))
         wfs_ps_data = np.zeros(ph_screen.shape)
         for i in range(6):
             mask = self._create_mask(ph_screen, (angs[i + 1], angs[i]))
             psm = np.ma.masked_array(
             ph_screen, mask=np.broadcast_to(mask, ph_screen.shape))
-            petals_median[:, i] = np.ma.median(psm, axis=(1, 2))
+            self._residual_petals[:, i] = np.ma.median(psm, axis=(1, 2))
             for j in range(wfs_ps_data.shape[0]):
                 wfs_ps_data[j][np.where(~mask)] = psm[j][
-                    np.where(~mask)] - petals_median[j, i]
+                    np.where(~mask)] - self._residual_petals[j, i]
         return np.ma.masked_array(wfs_ps_data, mask=ph_screen.mask)
     
+    @property
+    def residual_petals(self):
+        return self._residual_petals
+
     def _create_mask(self, ph_screen, angle_range):
         smask1 = sector_mask(ph_screen[0].shape,
                              (angle_range[0], angle_range[1]))
@@ -190,6 +195,15 @@ def restore_residual_wavefront(tracking_number):
     return np.ma.masked_array(dat, mask=cmask), hdr
 
 
+def restore_residual_petals(tracking_number):
+    fname_fits = os.path.join(data_root_dir(),
+                              'passata_simulations_converted',
+                              tracking_number,
+                              'CUBE_CL_converted.fits')
+    dat = fits.getdata(fname_fits, 2)
+    return dat
+
+
 class AoResSnapshotEntry(object):
     TRACKING_NUMBER = 'TN'
     PIXEL_SCALE = 'PIXELSCL'
@@ -207,9 +221,6 @@ class MaoryResidualWavefront(ArrayOpticalElement, Snapshotable):
     '''
     Return an OpticalElement whose opd represents the MAORY residual wavefront
     simulated by PASSATA
-
-    Data consists of 1375 frames sampled at 500Hz of residual wavefront on-axis
-    in median conditions
 
     Selected data are available in the shared gdrive
     "MORFEO-OAA/Petalometro Ciao Ciao/Simulazioni PASSATA" where a README.gdoc
