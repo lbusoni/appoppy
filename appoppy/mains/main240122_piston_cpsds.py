@@ -8,7 +8,7 @@ from morfeo.utils.constants import ELT
 from arte.atmo.cn2_profile import EsoEltProfiles
 
 
-def covariance_of_differential_piston_between_segments_measured_in_two_directions(
+def covariance_of_differential_piston_anisoplanatism(
         source1, source2, aperture1, aperture2, cn2_profile):
     '''
     Compute the covariance of the differential piston between two circular apertures measured along two different directions. 
@@ -53,7 +53,7 @@ def covariance_of_differential_piston_between_segments_measured_in_two_direction
     return res * rad_to_nm**2
 
 
-def cpsd_of_differential_piston_between_segments_measured_in_two_directions(
+def spectrum_of_differential_piston_anisoplanatism(
         source1, source2, aperture1, aperture2, cn2_profile, temp_freqs):
     '''
     Compute the cross-spectrum of the differential piston between two circular apertures measured along two different directions. 
@@ -124,9 +124,9 @@ def segment(theta_in_deg):
     return [radius, cartesian_crds]
 
 
-def main_compute_differential_piston_cpsd(
-        source1_crds = (55, 0),
-        source2_crds = (55, 120)):
+def main_spectrum_of_differential_piston_anisoplanatism(
+        source1_crds = (0, 0),
+        source2_crds = (55, 0)):
     '''
     Parameters
     ----------
@@ -142,22 +142,27 @@ def main_compute_differential_piston_cpsd(
     cn2_profile = EsoEltProfiles.Median()
     cn2_profile.set_zenith_angle(30 * u.deg)
     temp_freqs = np.logspace(-3, 3, 1000)
-    cpsd_1 = cpsd_of_differential_piston_between_segments_measured_in_two_directions(
+    cpsd_1 = spectrum_of_differential_piston_anisoplanatism(
         GuideSource(source1_crds, np.inf), GuideSource(source2_crds, np.inf),
         apertures[0], apertures[1], cn2_profile, temp_freqs)
-    cpsd_2 = cpsd_of_differential_piston_between_segments_measured_in_two_directions(
+    cpsd_2 = spectrum_of_differential_piston_anisoplanatism(
         GuideSource(source1_crds, np.inf), GuideSource(source2_crds, np.inf),
         apertures[0], apertures[2], cn2_profile, temp_freqs)
-    cpsd_3 = cpsd_of_differential_piston_between_segments_measured_in_two_directions(
+    cpsd_3 = spectrum_of_differential_piston_anisoplanatism(
         GuideSource(source1_crds, np.inf), GuideSource(source2_crds, np.inf),
         apertures[1], apertures[2], cn2_profile, temp_freqs)
+    plt.figure()
     plt.loglog(temp_freqs, abs(cpsd_1), label='Segments at (0, 60) deg')
     plt.loglog(temp_freqs, abs(cpsd_2), label='Segments at (0, -60) deg')
     plt.loglog(temp_freqs, abs(cpsd_3), label='Segments at (60, -60) deg')
     plt.grid()
-    plt.xlabel('$\nu$ [Hz]')
-    plt.ylabel('CPSD of differential piston [nm$^{2}$ / Hz]')
+    plt.xlabel('Temporal frequency [Hz]')
+    plt.ylabel('Spectrum of differential piston anisoplanatism [nm$^{2}$ / Hz]')
     plt.legend()
-    print('Covariance segments at (0, 60) deg: %s' % (np.trapz(cpsd_1, temp_freqs*u.Hz)).real)
-    print('Covariance segments at (0, -60) deg: %s' % (np.trapz(cpsd_2, temp_freqs*u.Hz)).real)
-    print('Covariance segments at (60, -60) deg: %s' % (np.trapz(cpsd_3, temp_freqs*u.Hz)).real)
+    plt.title('Off axis star in (%s", %s deg)' % (source2_crds[0], source2_crds[1]))
+    print('Petal error for segments at (0, 60) deg: %s' % (
+        np.sqrt(np.trapz(cpsd_1, temp_freqs*u.Hz))).real)
+    print('Petal error for segments at (0, -60) deg: %s' % (
+        np.sqrt(np.trapz(cpsd_2, temp_freqs*u.Hz))).real)
+    print('Petal error for segments at (60, -60) deg: %s' % (
+        np.sqrt(np.trapz(cpsd_3, temp_freqs*u.Hz))).real)
