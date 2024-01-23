@@ -2,6 +2,7 @@
 import os
 import numpy as np
 from astropy import units as u
+from appoppy.mains.main240112_convert_passata_residuals_with_petal_subtraction import KnownTracknums
 from appoppy.simulation_results import SimulationResults
 from appoppy.long_exposure_simulation import ClosedLoopSimulation, LongExposureSimulation, long_exposure_filename, long_exposure_tracknum
 import matplotlib.pyplot as plt
@@ -10,15 +11,6 @@ from arte.utils.quadratic_sum import quadraticSum
 
 # ROOT_DIR = '/Users/lbusoni/Library/CloudStorage/GoogleDrive-lorenzo.busoni@inaf.it/Il mio Drive/adopt/Varie/CiaoCiaoWFS/analysis/data/from_appoppy/'
 
-TN_NONE = 'none'
-TN_MCAO_1 = '20231209_202232.0_coo55.0_0.0'
-TN_MCAO_2 = '20231209_202232.0_coo55.0_120.0'
-TN_DAO_1 = '20231209_202232.0_coo55.0_0.0DAO'
-TN_SCAO_1000 = '20231212_212912.0_coo0.0_0.0'
-TN_SCAO_2000 = '20231213_101833.0_coo0.0_0.0'
-TN_REF_500 = '20231213_123051.0_coo0.0_0.0'
-TN_REF_100 = '20231213_123200.0_coo0.0_0.0'
-TN_REF_10 = '20231213_123403.0_coo0.0_0.0'
 
 
 def _create_long_exposure_generic(tn,
@@ -78,164 +70,164 @@ def create_all():
 
 
 def create_closed_loop_none_1002():
-    return _create_closed_loop_generic(TN_NONE, '1002', n_iter=100,
+    return _create_closed_loop_generic(KnownTracknums.TN_NONE, '1002', n_iter=100,
                                        petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 def create_long_exposure_none_0000():
-    return _create_long_exposure_generic(TN_NONE, '0000', n_iter=100)
+    return _create_long_exposure_generic(KnownTracknums.TN_NONE, '0000', n_iter=100)
 
 
 def create_long_exposure_none_0002():
-    return _create_long_exposure_generic(TN_NONE, '0002', n_iter=100,
+    return _create_long_exposure_generic(KnownTracknums.TN_NONE, '0002', n_iter=100,
                                          petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
 def create_long_exposure_mcao_1_0000():
-    return _create_long_exposure_generic(TN_MCAO_1, '0000')
+    return _create_long_exposure_generic(KnownTracknums.TN_MCAO_1, '0000')
 
 
 def create_long_exposure_mcao_1_0001():
-    return _create_long_exposure_generic(TN_MCAO_1, '0001', petals=np.array([0, 0, 0, 0, 100, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_MCAO_1, '0001', petals=np.array([0, 0, 0, 0, 100, 0]) * u.nm)
 
 
 def create_long_exposure_mcao_1_0002():
-    return _create_long_exposure_generic(TN_MCAO_1, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_MCAO_1, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
 def create_long_exposure_mcao_1_0003():
-    return _create_long_exposure_generic(TN_MCAO_1, '0003', petals=np.array([0, 0, 0, 0, 200, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_MCAO_1, '0003', petals=np.array([0, 0, 0, 0, 200, 0]) * u.nm)
 
 
 def create_long_exposure_dao_1_0000():
-    return _create_long_exposure_generic(TN_DAO_1, '0000')
+    return _create_long_exposure_generic(KnownTracknums.TN_DAO_1, '0000')
 
 
 def create_long_exposure_dao_1_0002():
-    return _create_long_exposure_generic(TN_DAO_1, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_DAO_1, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
 def create_long_exposure_scao_1000_0000():
-    return _create_long_exposure_generic(TN_SCAO_1000, '0000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_SCAO_1000, '0000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm)
 
 
 def create_long_exposure_scao_1000_0002():
-    return _create_long_exposure_generic(TN_SCAO_1000, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_SCAO_1000, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
 def create_long_exposure_scao_1000_0003():
-    return _create_long_exposure_generic(TN_SCAO_1000, '0003', petals=np.array([0, 0, 0, 0, 200, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_SCAO_1000, '0003', petals=np.array([0, 0, 0, 0, 200, 0]) * u.nm)
 
 
 def create_long_exposure_scao_2000_0000():
-    return _create_long_exposure_generic(TN_SCAO_2000, '0000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_SCAO_2000, '0000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm)
 
 
 def create_long_exposure_scao_2000_0002():
-    return _create_long_exposure_generic(TN_SCAO_2000, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_SCAO_2000, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
 def create_long_exposure_scao_2000_0003():
-    return _create_long_exposure_generic(TN_SCAO_2000, '0003', petals=np.array([0, 0, 0, 0, 200, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_SCAO_2000, '0003', petals=np.array([0, 0, 0, 0, 200, 0]) * u.nm)
 
 
 def create_long_exposure_ref_500_0000():
-    return _create_long_exposure_generic(TN_REF_500, '0000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_REF_500, '0000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm)
 
 
 def create_long_exposure_ref_500_0002():
-    return _create_long_exposure_generic(TN_REF_500, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_REF_500, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
 def create_long_exposure_ref_100_0000():
-    return _create_long_exposure_generic(TN_REF_100, '0000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_REF_100, '0000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm)
 
 
 def create_long_exposure_ref_100_0002():
-    return _create_long_exposure_generic(TN_REF_100, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_REF_100, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
 def create_long_exposure_ref_10_0000():
-    return _create_long_exposure_generic(TN_REF_10, '0000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_REF_10, '0000', petals=np.array([0, 0, 0, 0, 0, 0]) * u.nm)
 
 
 def create_long_exposure_ref_10_0002():
-    return _create_long_exposure_generic(TN_REF_10, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
+    return _create_long_exposure_generic(KnownTracknums.TN_REF_10, '0002', petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
 def analyze_none_0000():
-    return _analyze_long_exposure(TN_NONE, '0000')
+    return _analyze_long_exposure(KnownTracknums.TN_NONE, '0000')
 
 
 def analyze_none_0002():
-    return _analyze_long_exposure(TN_NONE, '0002')
+    return _analyze_long_exposure(KnownTracknums.TN_NONE, '0002')
 
 
 def analyze_mcao_1_0000():
-    return _analyze_long_exposure(TN_MCAO_1, '0000')
+    return _analyze_long_exposure(KnownTracknums.TN_MCAO_1, '0000')
 
 
 def analyze_mcao_1_0001():
-    return _analyze_long_exposure(TN_MCAO_1, '0001')
+    return _analyze_long_exposure(KnownTracknums.TN_MCAO_1, '0001')
 
 
 def analyze_dao_1_0000():
-    return _analyze_long_exposure(TN_DAO_1, '0000')
+    return _analyze_long_exposure(KnownTracknums.TN_DAO_1, '0000')
 
 
 def analyze_dao_1_0002():
-    return _analyze_long_exposure(TN_DAO_1, '0002')
+    return _analyze_long_exposure(KnownTracknums.TN_DAO_1, '0002')
 
 
 def analyze_mcao_0002():
-    return _analyze_long_exposure(TN_MCAO_1, '0002')
+    return _analyze_long_exposure(KnownTracknums.TN_MCAO_1, '0002')
 
 
 def analyze_scao_1000_0000():
-    return _analyze_long_exposure(TN_SCAO_1000, '0000')
+    return _analyze_long_exposure(KnownTracknums.TN_SCAO_1000, '0000')
 
 
 def analyze_scao_1000_0001():
-    return _analyze_long_exposure(TN_SCAO_1000, '0001')
+    return _analyze_long_exposure(KnownTracknums.TN_SCAO_1000, '0001')
 
 
 def analyze_scao_1000_0002():
-    return _analyze_long_exposure(TN_SCAO_1000, '0002')
+    return _analyze_long_exposure(KnownTracknums.TN_SCAO_1000, '0002')
 
 
 def analyze_scao_2000_0000():
-    return _analyze_long_exposure(TN_SCAO_2000, '0000')
+    return _analyze_long_exposure(KnownTracknums.TN_SCAO_2000, '0000')
 
 
 def analyze_scao_2000_0001():
-    return _analyze_long_exposure(TN_SCAO_2000, '0001')
+    return _analyze_long_exposure(KnownTracknums.TN_SCAO_2000, '0001')
 
 
 def analyze_scao_2000_0002():
-    return _analyze_long_exposure(TN_SCAO_2000, '0002')
+    return _analyze_long_exposure(KnownTracknums.TN_SCAO_2000, '0002')
 
 
 def analyze_ref_500_0000():
-    return _analyze_long_exposure(TN_REF_500, '0000')
+    return _analyze_long_exposure(KnownTracknums.TN_REF_500, '0000')
 
 
 def analyze_ref_500_0002():
-    return _analyze_long_exposure(TN_REF_500, '0002')
+    return _analyze_long_exposure(KnownTracknums.TN_REF_500, '0002')
 
 
 def analyze_ref_100_0000():
-    return _analyze_long_exposure(TN_REF_100, '0000')
+    return _analyze_long_exposure(KnownTracknums.TN_REF_100, '0000')
 
 
 def analyze_ref_100_0002():
-    return _analyze_long_exposure(TN_REF_100, '0002')
+    return _analyze_long_exposure(KnownTracknums.TN_REF_100, '0002')
 
 
 def analyze_ref_10_0000():
-    return _analyze_long_exposure(TN_REF_10, '0000')
+    return _analyze_long_exposure(KnownTracknums.TN_REF_10, '0000')
 
 
 def analyze_ref_10_0002():
-    return _analyze_long_exposure(TN_REF_10, '0002')
+    return _analyze_long_exposure(KnownTracknums.TN_REF_10, '0002')
 
 
 def animate_all(lep):
@@ -371,35 +363,35 @@ def _analyze_two_leps(passata_tracknum, lep_code_1, lep_code_2):
 
 
 def plot_none():
-    return _analyze_two_leps(TN_NONE, '0000', '0002')
+    return _analyze_two_leps(KnownTracknums.TN_NONE, '0000', '0002')
 
 
 def plot_mcao_1():
-    return _analyze_two_leps(TN_MCAO_1, '0000', '0002')
+    return _analyze_two_leps(KnownTracknums.TN_MCAO_1, '0000', '0002')
 
 
 def plot_dao_1():
-    return _analyze_two_leps(TN_DAO_1, '0000', '0002')
+    return _analyze_two_leps(KnownTracknums.TN_DAO_1, '0000', '0002')
 
 
 def plot_ref_500():
-    return _analyze_two_leps(TN_REF_500, '0000', '0002')
+    return _analyze_two_leps(KnownTracknums.TN_REF_500, '0000', '0002')
 
 
 def plot_ref_100():
-    return _analyze_two_leps(TN_REF_100, '0000', '0002')
+    return _analyze_two_leps(KnownTracknums.TN_REF_100, '0000', '0002')
 
 
 def plot_ref_10():
-    return _analyze_two_leps(TN_REF_10, '0000', '0002')
+    return _analyze_two_leps(KnownTracknums.TN_REF_10, '0000', '0002')
 
 
 def plot_scao_1000():
-    return _analyze_two_leps(TN_SCAO_1000, '0000', '0002')
+    return _analyze_two_leps(KnownTracknums.TN_SCAO_1000, '0000', '0002')
 
 
 def plot_scao_2000():
-    return _analyze_two_leps(TN_SCAO_2000, '0000', '0002')
+    return _analyze_two_leps(KnownTracknums.TN_SCAO_2000, '0000', '0002')
 
 
 def update_header(tn, code):

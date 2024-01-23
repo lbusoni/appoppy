@@ -1,33 +1,13 @@
 import logging
 import numpy as np
 from astropy import units as u
+from appoppy.mains.main240112_convert_passata_residuals_with_petal_subtraction import KnownTracknums
 from appoppy.simulation_results import SimulationResults
 from appoppy.long_exposure_simulation import ClosedLoopSimulation, long_exposure_filename, long_exposure_tracknum
 import matplotlib.pyplot as plt
 from arte.utils.quadratic_sum import quadraticSum
 
-TN_NONE = 'none'
-TN_MCAO_1 = '20231209_202232.0_coo55.0_0.0'
-TN_MCAO_2 = '20231209_202232.0_coo55.0_120.0'
-TN_DAO_1 = '20231209_202232.0_coo55.0_0.0DAO'
-TN_SCAO_1000 = '20231212_212912.0_coo0.0_0.0'
-TN_SCAO_2000 = '20231213_101833.0_coo0.0_0.0'
-TN_REF_500 = '20231213_123051.0_coo0.0_0.0'
-TN_REF_100 = '20231213_123200.0_coo0.0_0.0'
-TN_REF_10 = '20231213_123403.0_coo0.0_0.0'
-TN_MCAO_LWE_1 = '20240109_171236.0_coo55.0_0.0'  # MCAO or DAO?
-TN_SCAO_2000_LWE = '20240109_165105.0_coo0.0_0.0'
 
-TN_MCAO_1_PS = '20231209_202232.0_coo55.0_0.0_ps'
-TN_MCAO_2_PS = '20231209_202232.0_coo55.0_120.0_ps'
-TN_DAO_1_PS = '20231209_202232.0_coo55.0_0.0DAO_ps'
-TN_SCAO_1000_PS = '20231212_212912.0_coo0.0_0.0_ps'
-TN_SCAO_2000_PS = '20231213_101833.0_coo0.0_0.0_ps'
-TN_REF_500_PS = '20231213_123051.0_coo0.0_0.0_ps'
-TN_REF_100_PS = '20231213_123200.0_coo0.0_0.0_ps'
-TN_REF_10_PS = '20231213_123403.0_coo0.0_0.0_ps'
-
-# TN_REF_500_LWE_1 = '20240110_092253.0_coo0.0_0.0'
 
 
 def _create_closed_loop_generic(tn,
@@ -119,17 +99,17 @@ def create_some_petals_sequences_for(tn):
 
 def create_all():
     create_none_1002()
-    create_all_petals_sequences_for(TN_MCAO_1_PS)
-    create_all_petals_sequences_for(TN_SCAO_2000_PS)
-#    create_all_petals_sequences_for(TN_REF_10_PS)
-    create_some_petals_sequences_for(TN_MCAO_1)
-    create_some_petals_sequences_for(TN_SCAO_2000)
-    create_some_petals_sequences_for(TN_MCAO_LWE_1)
-    create_some_petals_sequences_for(TN_SCAO_2000_LWE)
+    create_all_petals_sequences_for(KnownTracknums.TN_MCAO_1_PS)
+    create_all_petals_sequences_for(KnownTracknums.TN_SCAO_2000_PS)
+#    create_all_petals_sequences_for(KnownTracknums.TN_REF_10_PS)
+    create_some_petals_sequences_for(KnownTracknums.TN_MCAO_1)
+    create_some_petals_sequences_for(KnownTracknums.TN_SCAO_2000)
+    create_some_petals_sequences_for(KnownTracknums.TN_MCAO_LWE_1)
+    create_some_petals_sequences_for(KnownTracknums.TN_SCAO_2000_LWE)
 
 
 def create_none_1002():
-    _create_closed_loop_generic(TN_NONE, '1002', n_iter=100,
+    _create_closed_loop_generic(KnownTracknums.TN_NONE, '1002', n_iter=100,
                                        petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
@@ -137,62 +117,22 @@ def create_none_1002():
 
 def analyze_mcao_1(code):
     'res = analyze_mcao_1(1002)'
-    return _analyze_simul_results(TN_MCAO_1, str(code))
-
-
-def analyze_mcao_1_1002():
-    return _analyze_simul_results(TN_MCAO_1, '1002')
-
-
-def analyze_mcao_1_1003():
-    return _analyze_simul_results(TN_MCAO_1, '1003')
-
-
-def analyze_mcao_1_1004():
-    return _analyze_simul_results(TN_MCAO_1, '1004')
+    return _analyze_simul_results(KnownTracknums.TN_MCAO_1, str(code))
 
 
 # analyze ps
-
-def analyze_mcao_1_ps_1002():
-    return _analyze_simul_results(TN_MCAO_1_PS, '1002')
-
-
-def analyze_mcao_1_ps_1003():
-    return _analyze_simul_results(TN_MCAO_1_PS, '1003', '1000')
+def analyze_mcao_1_ps(code):
+    'res = analyze_mcao_1_ps(1002)'
+    return _analyze_simul_results(KnownTracknums.TN_MCAO_1_PS, str(code))
 
 
-def analyze_mcao_1_ps_1004():
-    return _analyze_simul_results(TN_MCAO_1_PS, '1004')
-
-
-def analyze_mcao_1_ps_1005():
-    return _analyze_simul_results(TN_MCAO_1_PS, '1005', '0000')
-
-
-def analyze_mcao_1_ps_1006():
-    return _analyze_simul_results(TN_MCAO_1_PS, '1006', '0000')
-
-
-def analyze_mcao_1_ps_1007():
-    return _analyze_simul_results(TN_MCAO_1_PS, '1007', '0000')
-
-
-def analyze_scao_2000_ps_1002():
-    return _analyze_simul_results(TN_SCAO_2000_PS, '1002', '1000')
-
-
-def analyze_scao_2000_ps_1003():
-    return _analyze_simul_results(TN_SCAO_2000_PS, '1003', '1000')
-
-
-def analyze_scao_2000_ps_1004():
-    return _analyze_simul_results(TN_SCAO_2000_PS, '1004', '1000')
+def analyze_scao_2000_ps(code):
+    return _analyze_simul_results(KnownTracknums.TN_SCAO_2000_PS, str(code))
 
 
 def _analyze_simul_results(passata_tracknum, code_with_petals):
     code_no_petals = '0000'
-    if passata_tracknum[-3:] == '_ps':
+    if passata_tracknum[-3:] != '_ps':
         passata_tracknum_no_petals = passata_tracknum + '_ps'
     else:
         passata_tracknum_no_petals = passata_tracknum
