@@ -136,7 +136,7 @@ def main_spectrum_of_differential_piston_anisoplanatism(
     source2_crds: tuple
         Coordinates in (arcsec, degrees) of the second source used to measure differential piston between two segments.
     '''
-    thetas = [0, 60, -60] * u.deg
+    thetas = [0, 60, -60, 120] * u.deg
     apertures = [CircularOpticalAperture(
         segment(th)[0], segment(th)[1]) for th in thetas]
     cn2_profile = EsoEltProfiles.Median()
@@ -151,10 +151,14 @@ def main_spectrum_of_differential_piston_anisoplanatism(
     cpsd_3 = spectrum_of_differential_piston_anisoplanatism(
         GuideSource(source1_crds, np.inf), GuideSource(source2_crds, np.inf),
         apertures[1], apertures[2], cn2_profile, temp_freqs)
+    cpsd_4 = spectrum_of_differential_piston_anisoplanatism(
+        GuideSource(source1_crds, np.inf), GuideSource(source2_crds, np.inf),
+        apertures[2], apertures[3], cn2_profile, temp_freqs) 
     plt.figure()
     plt.loglog(temp_freqs, abs(cpsd_1), label='Segments at (0, 60) deg')
     plt.loglog(temp_freqs, abs(cpsd_2), label='Segments at (0, -60) deg')
     plt.loglog(temp_freqs, abs(cpsd_3), label='Segments at (60, -60) deg')
+    plt.loglog(temp_freqs, abs(cpsd_4), label='Segments at (-60, 120) deg')
     plt.grid()
     plt.xlabel('Temporal frequency [Hz]')
     plt.ylabel('Spectrum of differential piston anisoplanatism [nm$^{2}$ / Hz]')
@@ -166,3 +170,5 @@ def main_spectrum_of_differential_piston_anisoplanatism(
         np.sqrt(np.trapz(cpsd_2, temp_freqs*u.Hz))).real)
     print('Petal error for segments at (60, -60) deg: %s' % (
         np.sqrt(np.trapz(cpsd_3, temp_freqs*u.Hz))).real)
+    print('Petal error for segments at (-60, 120) deg: %s' % (
+        np.sqrt(np.trapz(cpsd_4, temp_freqs*u.Hz))).real)
