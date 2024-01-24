@@ -129,6 +129,10 @@ def analyze_mcao_1_ps(code):
 def analyze_scao_2000_ps(code):
     return _analyze_simul_results(KnownTracknums.TN_SCAO_2000_PS, str(code))
 
+# analyze mcao on axis
+def analyze_mcao_0():
+    return _analyze_simul_results_onaxis(KnownTracknums.TN_MCAO_1, '1000',
+                                         KnownTracknums.TN_MCAO_0, '0000')
 
 def _analyze_simul_results(passata_tracknum, code_with_petals):
     code_no_petals = '0000'
@@ -159,6 +163,35 @@ def _analyze_simul_results(passata_tracknum, code_with_petals):
     print('Measured jumps: %s' % jumps[::2])
 
     return le_with_petals
+
+def _analyze_simul_results_onaxis(passata_tracknum_offaxis, code_cl_no_petals, passata_tracknum_onaxis, code_ol_no_petals):
+    '''
+    Compute the petals correction from off-axis AO residuals and apply the correction on axis.
+    '''
+    skip_steps = 20
+    le_onaxis = SimulationResults.load(long_exposure_tracknum(passata_tracknum_onaxis, code_ol_no_petals))
+    input_opd_onaxis = le_onaxis.input_opd()[skip_steps:]
+    std_input_onaxis = input_opd_onaxis.std(axis=(1, 2))
+    le_offaxis = SimulationResults.load(
+        long_exposure_tracknum(passata_tracknum_offaxis, code_cl_no_petals))
+    input_opd_offaxis = le_offaxis.input_opd()[skip_steps:]
+    std_input_offaxis = input_opd_offaxis.std(axis=(1, 2))
+    corrected_opd_offaxis = le_offaxis.corrected_opd()[skip_steps:] 
+    correction_opd_from_offaxis = input_opd_offaxis - corrected_opd_offaxis
+    std_corrected_offaxis = corrected_opd_offaxis.std(axis=(1, 2))
+    corrected_opd_onaxis = input_opd_onaxis - correction_opd_from_offaxis
+    std_corrected_onaxis = corrected_opd_onaxis.std(axis=(1, 2))
+    timev = np.arange(len(std_input_onaxis)) * le_onaxis.time_step
+    plt.figure()
+    plt.plot(timev, std_input_onaxis, label='Input on axis')
+    plt.plot(timev, std_corrected_onaxis, label='Residual on axis')
+    plt.plot(timev, std_input_offaxis, label='Input off axis')
+    plt.plot(timev, std_corrected_offaxis, label='Residual off axis')
+    plt.legend()
+    plt.grid()
+    plt.ylabel('Std [nm]')
+    plt.xlabel('Time [s]')
+    plt.title("%s %s" % (passata_tracknum_onaxis, code_ol_no_petals))
 
 
 def _stdev_after_transient(what):
