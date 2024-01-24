@@ -4,6 +4,7 @@ from appoppy.maory_residual_wfe import PASSATASimulationConverter
 
 class KnownTracknums:
     TN_NONE = 'none'
+    TN_MCAO_0 = '20231209_202232.0_coo0.0_0.0' 
     TN_MCAO_1 = '20231209_202232.0_coo55.0_0.0'
     TN_MCAO_2 = '20231209_202232.0_coo55.0_120.0'
     TN_DAO_1 = '20231209_202232.0_coo55.0_0.0DAO'
@@ -15,6 +16,7 @@ class KnownTracknums:
     TN_MCAO_LWE_1 = '20240109_171236.0_coo55.0_0.0'  # MCAO or DAO?
     TN_SCAO_2000_LWE = '20240109_165105.0_coo0.0_0.0'
 
+    TN_MCAO_0_PS = '20231209_202232.0_coo0.0_0.0_ps'
     TN_MCAO_1_PS = '20231209_202232.0_coo55.0_0.0_ps'
     TN_MCAO_2_PS = '20231209_202232.0_coo55.0_120.0_ps'
     TN_DAO_1_PS = '20231209_202232.0_coo55.0_0.0DAO_ps'
