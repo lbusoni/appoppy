@@ -82,6 +82,10 @@ def create_long_exposure_none_0002():
                                          petals=np.array([0, 0, 0, 0, 400, 0]) * u.nm)
 
 
+def create_long_exposure_mcao_0_0000():
+    return _create_long_exposure_generic(KnownTracknums.TN_MCAO_0, '0000')
+
+
 def create_long_exposure_mcao_1_0000():
     return _create_long_exposure_generic(KnownTracknums.TN_MCAO_1, '0000')
 
