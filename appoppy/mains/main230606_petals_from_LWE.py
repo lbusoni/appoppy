@@ -41,11 +41,10 @@ def main230605_correction_of_LWE_induced_petals_between_sectors():
     return pet
 
 
-def main230606_LWE_maps_temporal_mean_and_std_on_sectors():
+def main230606_LWE_maps_temporal_mean_and_std_on_sectors(wind_speed=0.5):
     '''
     Sector 0 is in (90, 30)deg, sector 1 in (30, -30) and so on.
     '''
-    wind_speed = 0.5
     sectors = 6
     lwe = LowWindEffectWavefront(wind_speed=wind_speed,
                                  start_from=None,
@@ -69,13 +68,13 @@ def main230606_LWE_maps_temporal_mean_and_std_on_sectors():
     plt.ylabel('Average OPD [um]')
     plt.legend()
     plt.grid()
-    # plt.figure()
-    # for i in range(sectors):
-    #     plt.plot(stds[i], label='S%s' % i)
-    # plt.xlabel('Step')
-    # plt.ylabel('Std [um]')
-    # plt.legend()
-    # plt.grid()
+    plt.figure()
+    for i in range(sectors - 1):
+        plt.plot(means[i] - means[i+1], label='S%s - S%s' %(i, i+1))
+    plt.legend()
+    plt.grid()
+    plt.xlabel('Time [s]')
+    plt.ylabel('LWE-induced petals [um]')
     return masks, means, stds
 
 
