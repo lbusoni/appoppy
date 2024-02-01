@@ -25,7 +25,8 @@ class KnownTracknums:
     TN_REF_500_PS = '20231213_123051.0_coo0.0_0.0_ps'
     TN_REF_100_PS = '20231213_123200.0_coo0.0_0.0_ps'
     TN_REF_10_PS = '20231213_123403.0_coo0.0_0.0_ps'
-
+    TN_MCAO_LWE_1_PS = '20240109_171236.0_coo55.0_0.0_ps'  # MCAO or DAO?
+    TN_SCAO_2000_LWE_PS = '20240109_165105.0_coo0.0_0.0_ps'
     # TN_REF_500_LWE_1 = '20240110_092253.0_coo0.0_0.0'
 
 
