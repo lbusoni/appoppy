@@ -129,6 +129,11 @@ def analyze_mcao_1_ps(code):
 def analyze_scao_2000_ps(code):
     return _analyze_simul_results(KnownTracknums.TN_SCAO_2000_PS, str(code))
 
+# analyze lwe
+
+def analyze_mcao_lwe(code):
+   return _analyze_simul_results_cedric_style(KnownTracknums.TN_MCAO_LWE_1, str(code)) 
+
 # analyze mcao on axis
 def analyze_mcao_0():
     return _analyze_simul_results_onaxis(KnownTracknums.TN_MCAO_1, '1000',
@@ -147,12 +152,9 @@ def _analyze_simul_results(passata_tracknum, code_with_petals):
     skip_steps = 20
     std_input = le_no_petals.input_opd()[skip_steps:].std(axis=(1, 2))
     std_corr_inst = le_with_petals.corrected_opd()[skip_steps:].std(axis=(1, 2))
-#    std_corr_long = le_scramble.corrected_opd_from_reconstructed_phase_ave()[20:].std(axis=(1, 2))
     _plot_stdev_residual(le_with_petals, le_no_petals,
                          title="%s %s" % (passata_tracknum, code_with_petals))
     print('\nMean of MORFEO residuals stds: %s' % std_input.mean())
-#    print('Mean of MORFEO residuals (with long exposure petal correction) stds: %s'
-#        % std_corr_long.mean())
     print(
         'Mean of MORFEO residuals (with short exposure petal correction) stds: %s'
         % std_corr_inst.mean())
@@ -163,6 +165,34 @@ def _analyze_simul_results(passata_tracknum, code_with_petals):
     print('Measured jumps: %s' % jumps[::2])
 
     return le_with_petals
+
+def _analyze_simul_results_cedric_style(passata_tracknum, code_with_petals):
+    code_no_petals = '0000'
+    if passata_tracknum[-3:] != '_ps':
+        passata_tracknum_no_petals = passata_tracknum + '_ps'
+    else:
+        passata_tracknum_no_petals = passata_tracknum
+    le_with_petals = SimulationResults.load(
+        long_exposure_tracknum(passata_tracknum, code_with_petals))
+    le_no_petals = SimulationResults.load(
+        long_exposure_tracknum(passata_tracknum_no_petals, code_no_petals))
+    skip_steps = 20
+    std_input_raw_corrected = le_no_petals.input_opd()[skip_steps:].std(axis=(1, 2))
+    std_corr_inst = le_with_petals.corrected_opd()[skip_steps:].std(axis=(1, 2))
+    _plot_stdev_residual_cedric_style(le_with_petals, le_no_petals,
+                         title="%s %s" % (passata_tracknum, code_with_petals))
+    print('\nMean of MORFEO residuals stds: %s' % std_input_raw_corrected.mean())
+    print(
+        'Mean of MORFEO residuals (with short exposure petal correction) stds: %s'
+        % std_corr_inst.mean())
+
+    petals, jumps = le_with_petals.petals_from_reconstructed_phase_map(
+        le_with_petals.reconstructed_phase_ave())
+    print('\nMeasured petals: %s' % petals)
+    print('Measured jumps: %s' % jumps[::2])
+
+    return le_with_petals
+
 
 def _analyze_simul_results_onaxis(passata_tracknum_offaxis, code_cl_no_petals, passata_tracknum_onaxis, code_ol_no_petals):
     '''
@@ -201,30 +231,36 @@ def _stdev_after_transient(what):
 def _plot_stdev_residual(le_with_petals, le_no_petals, title=''):
     std_input = _stdev_after_transient(le_no_petals.input_opd())
     std_corr_inst = _stdev_after_transient(le_with_petals.corrected_opd())
-    # std_corr_long = _stdev_after_transient(
-    #     le_scramble.corrected_opd_from_reconstructed_phase_ave())
     timev = np.arange(len(std_input)) * le_no_petals.time_step
     plt.figure()
     plt.plot(timev, std_input,
              label=r'Petalometer Off - No petals $\sqrt{\sigma_{off}}$=%d nm'% std_input.mean())
     plt.plot(timev, std_corr_inst,
              label='Petalometer On short exposure $\sqrt{\sigma_{short}}$=%d nm' % std_corr_inst.mean())
-    # plt.plot(timev, std_corr_long,
-    #          label='Petalometer On long exposure $\sqrt{\sigma_{long}}$')
     quadr_diff_inst = quadraticSum([std_corr_inst, -std_input])
-    # quadr_diff_long = quadraticSum([std_corr_long, -std_input])
-    # quadr_diff_inst = np.sqrt(
-    #     std_corr_inst ** 2 - std_input ** 2)
-    # quadr_diff_long = np.sqrt(
-    #     std_corr_long ** 2 - std_input ** 2)
     print('\nResidual short [nm]: %s' % (quadr_diff_inst.mean()))
-    # print('\nResidual long [nm]: %s' % (quadr_diff_long.mean()))
     plt.plot(timev, quadr_diff_inst,
              label=r'$\sqrt{\sigma_{short}^2 - \sigma_{off}^2}$=%d nm' % quadr_diff_inst.mean())
-    # plt.plot(timev, quadr_diff_long,
-    #          label=r'$\sqrt{\sigma_{off}^2-\sigma_{long}^2}$')
     plt.legend()
     plt.grid()
     plt.ylabel('Std [nm]')
+    plt.xlabel('Time [s]')
+    plt.title(title)
+
+
+def _plot_stdev_residual_cedric_style(le_with_petals, le_no_petals, title=''):
+    std_input_raw_corrected = _stdev_after_transient(le_no_petals.input_opd())
+    std_input_raw_pist = _stdev_after_transient(le_with_petals.input_opd())
+    std_corr_inst = _stdev_after_transient(le_with_petals.corrected_opd())
+    timev = np.arange(len(std_input_raw_corrected)) * le_no_petals.time_step
+    plt.figure()
+    plt.plot(timev, std_input_raw_pist, label='Raw + pist (LWE)', color='red')
+    plt.plot(timev, std_input_raw_corrected, label='Raw corrected', color='green')
+    plt.plot(timev, std_corr_inst, label='Raw + pist (LWE) corrected', color='blue')
+    quadr_diff_inst = quadraticSum([std_corr_inst, -std_input_raw_corrected])
+    print('\nResidual short [nm]: %s' % (quadr_diff_inst.mean()))
+    plt.legend()
+    plt.grid()
+    plt.ylabel('WFE [nm]')
     plt.xlabel('Time [s]')
     plt.title(title)
