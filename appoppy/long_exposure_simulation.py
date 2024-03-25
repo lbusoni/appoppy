@@ -4,7 +4,7 @@ import astropy.units as u
 from pathlib import Path
 import os
 from appoppy.control_loop import AbstractActuator, AbstractSensor, IntegralController
-from appoppy.elt_for_petalometry import EltForPetalometry
+from appoppy.system_for_petalometry import EltForPetalometry
 from appoppy.ao_residuals import AOResidual
 from appoppy.package_data import data_root_dir
 from appoppy.petalometer import PetalComputer, Petalometer

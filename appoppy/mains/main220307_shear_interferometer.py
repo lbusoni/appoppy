@@ -59,8 +59,8 @@ def test_fits_optical_element():
 
 def reload():
     import importlib
-    from appoppy import elt_for_petalometry
-    from appoppy import phase_shift_interferometer
+    from appoppy import system_for_petalometry
+    from appoppy import interferometer
     from appoppy import petalometer
     from appoppy.mains import main220307_shear_interferometer
     from appoppy import petaled_m4
@@ -68,9 +68,9 @@ def reload():
     from appoppy import maory_residual_wfe
     importlib.reload(petaled_m4)
     importlib.reload(maory_residual_wfe)
-    importlib.reload(elt_for_petalometry)
+    importlib.reload(system_for_petalometry)
     importlib.reload(elt_aperture)
-    importlib.reload(phase_shift_interferometer)
+    importlib.reload(interferometer)
     importlib.reload(petalometer)
     importlib.reload(main220307_shear_interferometer)
 

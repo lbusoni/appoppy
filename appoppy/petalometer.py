@@ -1,7 +1,7 @@
 import astropy.units as u
 import numpy as np
-from appoppy.phase_shift_interferometer import PhaseShiftInterferometer
-from appoppy.elt_for_petalometry import EltForPetalometry
+from appoppy.interferometer import PhaseShiftInterferometer
+from appoppy.system_for_petalometry import EltForPetalometry
 from appoppy.mask import sector_mask
 import logging
 from appoppy.snapshotable import SnapshotPrefix, Snapshotable

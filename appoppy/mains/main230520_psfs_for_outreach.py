@@ -5,7 +5,7 @@ import numpy as np
 from astropy import units as u
 from appoppy.petaled_m4 import PetaledM4
 from appoppy.elt_aperture import ELTAperture
-from appoppy.elt_for_petalometry import EltForPetalometry
+from appoppy.system_for_petalometry import EltForPetalometry
 from matplotlib import pyplot as plt
 from appoppy.gif_animator import Gif2DMapsAnimator
 import os

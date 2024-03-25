@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import unittest
-from appoppy.elt_for_petalometry import EltForPetalometry
+from appoppy.system_for_petalometry import EltForPetalometry, LabSystemForCiaoCiao
 import numpy as np
 from astropy import units as u
 
@@ -63,6 +63,38 @@ class EltForPetalometryTest(unittest.TestCase):
         res = efp.pupil_phase()
         res = efp.pupil_wavefront()
         aa = efp.get_snapshot()
+        psf = efp.psf()
+
+
+class LabSystemForCiaoCiaoTest(unittest.TestCase):
+
+    def test_construction(self):
+        lsfc = LabSystemForCiaoCiao()
+        self.assertIsInstance(lsfc, LabSystemForCiaoCiao)
+
+    def test_none_arguments_makes_minimal_system(self):
+        lsfc = LabSystemForCiaoCiao()        
+        self.assertEqual(len(lsfc.optical_system.planes), 3)
+
+
+    def test_default_is_null_opd(self):
+        lsfc = LabSystemForCiaoCiao()
+        self.assertAlmostEqual(0, lsfc.pupil_opd().std())
+        self.assertAlmostEqual(0, lsfc.pupil_opd().mean())
+
+    def test_call_all(self):
+        lsfc = LabSystemForCiaoCiao()
+        res = lsfc.pupil_opd()
+        res = lsfc.psf()
+        res = lsfc.pupil_phase()
+        res = lsfc.pupil_mask()
+
+    def test_create_with_everything(self):
+        efp = EltForPetalometry(zern_coeff=np.array([0, 0, 0, 100]*u.nm),
+                                rotation_angle=43)
+        res = efp.pupil_opd()
+        res = efp.pupil_phase()
+        res = efp.pupil_wavefront()
         psf = efp.psf()
 
 if __name__ == "__main__":
