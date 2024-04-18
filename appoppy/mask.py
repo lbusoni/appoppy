@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.ndimage import center_of_mass
+from arte.types.mask import CircularMask
 
 
 def mask_from_median(image, cut):
@@ -58,3 +60,31 @@ def mask_phase_screen(phase_screen, angle_range):
     return np.ma.masked_array(
         phase_screen, mask=np.broadcast_to(
             mask, phase_screen.shape))
+
+
+def mask_from_threshold(ima, threshold):
+    '''
+    threshold: float
+        Percentage of maximum value.
+    '''
+    cut = threshold * ima.max()
+    one_bit_ima = np.zeros(ima.shape)
+    one_bit_ima[ima >= cut] = 1
+    
+    def get_n_pixels():
+        n_pixels_above_cut = ima[one_bit_ima == 1].shape[0]
+        r = np.sqrt(n_pixels_above_cut / np.pi)
+        y, x = center_of_mass(one_bit_ima)
+        mask = CircularMask(frameShape=ima.shape,
+                            maskRadius=r-0.5,
+                            maskCenter=[y, x])
+        changed_pixels = ima[np.logical_and(mask.mask()==False, one_bit_ima==0)].shape[0]
+        one_bit_ima[np.logical_and(mask.mask()==False, one_bit_ima==0)] = 1 
+        return changed_pixels, mask
+
+    while True:
+        n_pix, mask = get_n_pixels() 
+        if n_pix == 0:
+            break
+        
+    return mask
