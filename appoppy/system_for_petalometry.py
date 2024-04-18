@@ -42,7 +42,8 @@ class BaseSystemForPetalometry(Snapshotable):
         self.name = name
         self.lambda_over_d = (
             self.wavelength / (2 * self.telescope_radius)).to(
-                u.arcsec, equivalencies=u.dimensionless_angles())    
+                u.arcsec, equivalencies=u.dimensionless_angles())
+        self.pixelscale = 0.25 * self.lambda_over_d / (1 * u.pixel) 
         self.pixelsize = 2 * self.telescope_radius / self._npix
         self._initialize_optical_system()
         self._reset_intermediate_wfs()
@@ -66,7 +67,7 @@ class BaseSystemForPetalometry(Snapshotable):
                                             pupil_diameter=self.telescope_radius*2)
         self._osys.add_pupil(poppy.CircularAperture(radius=self.telescope_radius, name=self.PLANE_EXIT_PUPIL))
         self._osys.add_detector(
-            pixelscale=0.25 * self.lambda_over_d / (1 * u.pixel), fov_arcsec=1)
+            pixelscale=self.pixelscale, fov_arcsec=1)
             
         self._planes_idx_dict = {x.name: i for i, x in enumerate(self._osys.planes)}
         self.display_intermediates = False
@@ -262,6 +263,7 @@ class EltForPetalometry(BaseSystemForPetalometry):
         # self.telescope_radius = telescope_radius
 
         BaseSystemForPetalometry.__init__(self, npix, oversample, wavelength, telescope_radius, name)
+        self.pixelscale = 0.5 * self.lambda_over_d / (1 * u.pixel) 
 
     def _initialize_optical_system(self): 
         self._log = logging.getLogger('EltForPetalometry-%s' % self.name)
@@ -584,13 +586,15 @@ class LabSystemForCiaoCiao(BaseSystemForPetalometry):
 
     PLANE_ZERNIKE = 'Zernike'
     PLANE_PETALS = 'Petals'
+    PLANE_PHASE_SHIFT = 'phase shift'
     PLANE_TELESCOPE_APERTURE = 'Telescope aperture'
 
+    #TODO: check pupil diameter in the lab
     def __init__(self,
                  npix=256,
                  oversample=1,
-                 wavelength=2.2*u.um,
-                 telescope_radius=4*u.m,
+                 wavelength=0.633*u.um,
+                 telescope_radius=1*u.mm,
                  name='',
                  rotation_angle=0,
                  zernike_coeff=[0, 0]*u.nm,
@@ -629,15 +633,25 @@ class LabSystemForCiaoCiao(BaseSystemForPetalometry):
         if self._segmented_pupil:
             self._osys.add_pupil(self._segmented_pupil(name=self.PLANE_PETALS))
 
+        self._osys.add_pupil(ScalarOpticalPathDifference(
+            opd=0 * u.nm, planetype=PlaneType.pupil, name=self.PLANE_PHASE_SHIFT))
+            
         if self.pupil_rotation_angle != 0:
             self._osys.add_rotation(-1 * self.pupil_rotation_angle)
         self._osys.add_pupil(poppy.CircularAperture(radius=self.telescope_radius, name=self.PLANE_EXIT_PUPIL))
-        self._osys.add_detector(pixelscale=0.25*(self.wavelength / (self.telescope_radius*2)).to(
-            u.arcsec, equivalencies=u.dimensionless_angles()) /(1*u.pixel), fov_arcsec=1)
+        self._osys.add_detector(pixelscale=self.pixelscale, fov_pixels=1920)
     
         self._planes_idx_dict = {x.name: i for i, x in enumerate(self._osys.planes)}
         self.display_intermediates = False
 
+    def set_phase_shift(self, shift_in_lambda):
+        self._reset_intermediate_wfs()
+        in_wfe = ScalarOpticalPathDifference(
+            opd=shift_in_lambda * self.wavelength,
+            planetype=PlaneType.pupil,
+            name=self.PLANE_PHASE_SHIFT)
+        self.optical_system.planes[self._planes_idx_dict[self.PLANE_PHASE_SHIFT]] = in_wfe
+            
     def pupil_opd(self):
             if not self._intermediates_wfs:
                 self.propagate()
