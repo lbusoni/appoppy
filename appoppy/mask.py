@@ -10,7 +10,7 @@ def mask_from_median(image, cut):
     return mask
 
 
-def sector_mask(shape, angle_range, centre=None, radius=None):
+def sector_mask(shape, angle_range, centre=None, radius=None, radius_inner=None):
     """
     Return a boolean mask for a circular sector. 
     The start/stop angles in
@@ -20,6 +20,19 @@ def sector_mask(shape, angle_range, centre=None, radius=None):
     angle_range=(-150, 150) includes S, E. N and not W
 
     angle_range=(150, -150) raises ValueError
+    
+    Parameters
+    ----------
+    shape: tuple
+        Shape of the output mask
+    angle_range: tuple
+        (min_angle, max_angle) in degrees
+    centre: tuple or None
+        (cx, cy) center of the sector. If None, uses image center
+    radius: float or None
+        Outer radius. If None, uses distance to nearest edge
+    radius_inner: float or None
+        Inner radius for annular sectors. If None, sector extends to center
     """
 
     x, y = np.ogrid[:shape[0],:shape[1]]
@@ -44,8 +57,15 @@ def sector_mask(shape, angle_range, centre=None, radius=None):
     # wrap angles between 0 and 2*pi
     theta %= (2 * np.pi)
 
-    # circular mask
-    circmask = r2 <= radius * radius
+    # circular mask (outer radius)
+    circmask_outer = r2 <= radius * radius
+    
+    # inner radius mask (if specified)
+    if radius_inner is not None:
+        circmask_inner = r2 >= radius_inner * radius_inner
+        circmask = circmask_outer * circmask_inner
+    else:
+        circmask = circmask_outer
 
     # angular mask
     anglemask = theta <= (tmax - tmin)
